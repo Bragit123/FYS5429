@@ -8,12 +8,12 @@ class Convolution:
         self.input_size = input_size
         self.kernel_size = kernel_size
         
-        self.num_inputs, self.num_colors, self.input_width, self.input_height = self.input_size
+        self.num_inputs, self.input_depth, self.input_height, self.input_width = self.input_size
         self.num_kernels = self.kernel_size[0]
-        self.kernel_width = self.kernel_size[2]
-        self.kernel_height = self.kernel_size[3]
+        self.kernel_height = self.kernel_size[2]
+        self.kernel_width = self.kernel_size[3]
         
-        self.output_size = (self.num_inputs, self.num_kernels, self.input_width - self.kernel_width + 1, self.input_height - self.kernel_height + 1)
+        self.output_size = (self.num_inputs, self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
         self.bias_size = self.output_size[1:]
 
         rand_key = random.PRNGKey(seed)
@@ -27,7 +27,7 @@ class Convolution:
         output = jnp.zeros(self.output_size)
         for n in range(self.num_inputs):
             for i in range(self.num_kernels):
-                for c in range(self.num_colors):
+                for c in range(self.input_depth):
                     corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
                     output = output.at[n,i,:,:].set(jnp.sum(corr, axis=1))
 
