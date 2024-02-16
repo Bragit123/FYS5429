@@ -2,58 +2,53 @@
 import matplotlib.pyplot as plt
 from jax import random, vmap
 import jax.numpy as jnp
-from funcs import CostCrossEntropy, derivate
+from funcs import RELU, derivate
 
 
 class FullyConnected:
-    def __init__(self, input_size, output_size, seed=100):
-        self.input_size = input_size
-        self.output_size = output_size
-
-        self.num_inputs, self.input_length = self.input_size
-        self.num_outputs, self.output_length = self.output_size
+    def __init__(self, input_length, output_length, seed=100):
+        self.input_length = input_length
+        self.output_length = output_length
 
         self.weights_size = (self.input_length, self.output_length)
 
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(self.output_length,1)) * 0.01
+        self.bias = random.normal(key=rand_key, shape=(self.output_length,)) * 0.01
 
-        self.bias_size = self.bias.shape
-
-        self.loss_func = CostCrossEntropy #we should probably send in loss functions and make them the elements of a dictionary
+        self.bias_length = self.bias.shape
 
         # self.reset_weights()
 
     def feed_forward(self, input):
-        output = jnp.zeros(self.output_size)
-        self.z = jnp.zeros(self.output_length)
-        for i in range(self.num_outputs):
+        num_inputs = jnp.shape(input)[0]
+        output = jnp.zeros((num_inputs, self.output_length))
+        self.z = jnp.zeros((num_inputs, self.output_length))
+        for i in range(num_inputs):
             for j in range(self.output_length):
-                self.z = self.z.at[j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[j][0])
-                output = output.at[i,j].set(self.z[j])
+                self.z = self.z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[j])
+                output = output.at[i,j].set(self.z[i,j])
 
-        output = self.RELU(output)
+        output = RELU(output)
 
         return output
 
-    def RELU(self, X):
-        return jnp.where(X > jnp.zeros(X.shape), X, jnp.zeros(X.shape))
 
-
-    def backpropagate(self, output, target, lmbd):
-        cost = self.loss_func(target)
-        grad_cost = vmap(derivate(cost))
-        grad_act = derivate(self.RELU)
+    def backpropagate(self, input, dC_doutput, lmbd):
+        grad_act = derivate(RELU)
+        input_size = jnp.shape(input)
 
         grad_weights = jnp.zeros(self.weights_size)
-        grad_biases = jnp.zeros(self.bias_size)
+        grad_biases = jnp.zeros(self.bias_length)
+        grad_input = jnp.zeros(input_size)
 
         for i in range(self.input_length):
             for j in range(self.output_length):
-                grad_weights = grad_weights.at[i,j].set(jnp.sum(self.weights[i,j]*grad_act(self.z[j])*grad_cost(output[:,j])))
-                grad_biases = grad_biases.at[j,0].set(jnp.sum(1*grad_act(self.z[j])*grad_cost(output[:,j])))
+                grad_weights = grad_weights.at[i,j].set(jnp.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i]))
+                grad_biases = grad_biases.at[j].set(jnp.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j]))
+                grad_input += grad_input.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j] * self.weights[i,j]))
 
-        self.weights -= grad_weights*lmbd #Neew to implement scheduler
+        self.weights -= grad_weights*lmbd # Need to implement scheduler
         self.bias -= grad_biases*lmbd
-        return 0
+
+        return grad_input

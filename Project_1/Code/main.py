@@ -1,8 +1,10 @@
 import jax.numpy as jnp
+from jax import vmap
 from convolution import Convolution
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
-from flatteningfunc import flatten
+from flatteningfunc import Flattened_Layer
+from funcs import CostCrossEntropy, derivate
 
 image = jnp.array([
     [
@@ -42,33 +44,37 @@ image = jnp.array([
     ]
 ])
 
-image_shape = jnp.shape(image)
+image_shape = jnp.shape(image)[1:]
 kernel_shape = (2,3,2,2)
 
 cnn = Convolution(image_shape, kernel_shape)
 output = cnn.feed_forward(image)
 
-print(output)
+# print(output)
 
 pool = MaxPool(output.shape, jnp.array([2,2]), 1)
 pool_output = pool.feed_forward(output)
 
-print(pool_output)
+# print(pool_output)
 
-input_fully = flatten(pool_output)
+flat = Flattened_Layer()
+input_fully = flat.feed_forward(pool_output)
 
-print(input_fully)
+# print(input_fully)
 
-input_shape = jnp.shape(input_fully)
-output_shape = (input_shape[0], 6)
+input_length = jnp.shape(input_fully)[1]
+output_length = 6
 
-fc = FullyConnected(input_shape,output_shape)
+fc = FullyConnected(input_length,output_length)
 output = fc.feed_forward(input_fully)
 
-print(output)
+# print(output)
 
 target = jnp.array([[0,0,0,0,0,1],[0,0,0,0,0,1]])
 
-print(fc.weights)
-fc.backpropagate(output, target, 0.1)
-print(fc.weights)
+# print(fc.weights)
+gradCost = vmap(vmap(derivate(CostCrossEntropy(target))))
+dCdoutput = gradCost(output)
+grad_input = fc.backpropagate(input_fully, dCdoutput, 0.1)
+# print(fc.weights)
+# print(grad_input)
