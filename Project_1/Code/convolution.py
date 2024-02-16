@@ -1,4 +1,4 @@
-from scipy.signal import correlate2d, correlate
+from scipy.signal import correlate2d, convolve2d
 import matplotlib.pyplot as plt
 from jax import random
 import jax.numpy as jnp
@@ -38,4 +38,25 @@ class Convolution:
 
     
     def backpropagate(self, dC_doutput, lmbd):
-        return 0
+        input = self.input
+        input_shape = jnp.shape(input)
+        
+        grad_kernel = jnp.zeros(self.kernel_size)
+        grad_biases = jnp.zeros(self.bias_size)
+        grad_input = jnp.zeros(input_shape)
+
+        kernel_zeros = jnp.zeros(jnp.shape(grad_kernel))
+        input_zeros = jnp.zeros(jnp.shape(grad_input))
+
+        for n in range(input_shape[0]):
+            for i in range(self.num_kernels):
+                for d in range(self.input_depth):
+                    grad_kernel += kernel_zeros.at[i,d,:,:].set(correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid"))
+                    grad_input += input_zeros.at[n,d,:,:].set(convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full"))
+                
+        grad_biases = jnp.sum(dC_doutput, axis=0)
+
+        self.kernels -= grad_kernel * lmbd
+        self.bias -= grad_biases * lmbd
+
+        return grad_input

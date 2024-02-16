@@ -83,6 +83,9 @@ grad_flat = flat.backpropagate(grad_fc, lmbd)
 
 grad_pool = pool.backpropagate(grad_flat, lmbd)
 
+grad_cnn = cnn.backpropagate(grad_pool, lmbd)
+
 print(jnp.shape(grad_fc), jnp.shape(input_fully))
 print(jnp.shape(grad_flat), jnp.shape(pool_output))
 print(jnp.shape(grad_pool), jnp.shape(output))
+print(jnp.shape(grad_cnn), jnp.shape(image))
