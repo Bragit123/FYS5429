@@ -37,5 +37,5 @@ class Convolution:
         return output
 
     
-    def backpropagate(self):
+    def backpropagate(self, dC_doutput, lmbd):
         return 0

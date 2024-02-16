@@ -40,7 +40,7 @@ class MaxPool:
 
         return output
     
-    def back_propagate(self, dC_doutput, lmbd):
+    def backpropagate(self, dC_doutput, lmbd):
         grad_input = jnp.zeros(jnp.shape(self.input))
 
         for i in range(self.output_height):
@@ -49,10 +49,6 @@ class MaxPool:
             for j in range(self.output_width):
                 w_start = j*self.stride
                 w_end = w_start + self.scale_width
-                
-                h_start + i
-                
-                grad_input[:,:, h_start:h_end, w_start:w_end] = dC_doutput[:,:,i,j] * self.max_ind[:,:,:,:]
 
                 dC_ij = dC_doutput[:,:,i,j]
                 new_dC = dC_ij[:,:,jnp.newaxis,jnp.newaxis]

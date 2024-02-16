@@ -66,7 +66,7 @@ input_length = jnp.shape(input_fully)[1]
 output_length = 6
 
 fc = FullyConnected(input_length,output_length)
-output = fc.feed_forward(input_fully)
+output_fully = fc.feed_forward(input_fully)
 
 # print(output)
 
@@ -74,7 +74,15 @@ target = jnp.array([[0,0,0,0,0,1],[0,0,0,0,0,1]])
 
 # print(fc.weights)
 gradCost = vmap(vmap(derivate(CostCrossEntropy(target))))
-dCdoutput = gradCost(output)
-grad_input = fc.backpropagate(input_fully, dCdoutput, 0.1)
-# print(fc.weights)
-# print(grad_input)
+dCdoutput = gradCost(output_fully)
+lmbd = 0.1
+
+grad_fc = fc.backpropagate(dCdoutput, lmbd)
+
+grad_flat = flat.backpropagate(grad_fc, lmbd)
+
+grad_pool = pool.backpropagate(grad_flat, lmbd)
+
+print(jnp.shape(grad_fc), jnp.shape(input_fully))
+print(jnp.shape(grad_flat), jnp.shape(pool_output))
+print(jnp.shape(grad_pool), jnp.shape(output))
