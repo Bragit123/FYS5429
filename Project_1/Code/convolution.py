@@ -20,9 +20,9 @@ class Convolution:
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
 
-        # self.reset_weights()
     
     def feed_forward(self, input):
+        self.input = input
         num_inputs = jnp.shape(input)[0]
         output_size = (num_inputs,) + self.bias_size
         output = jnp.zeros(output_size)

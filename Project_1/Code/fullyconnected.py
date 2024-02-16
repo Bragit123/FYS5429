@@ -21,6 +21,7 @@ class FullyConnected:
         # self.reset_weights()
 
     def feed_forward(self, input):
+        self.input = input
         num_inputs = jnp.shape(input)[0]
         output = jnp.zeros((num_inputs, self.output_length))
         self.z = jnp.zeros((num_inputs, self.output_length))
@@ -34,7 +35,8 @@ class FullyConnected:
         return output
 
 
-    def backpropagate(self, input, dC_doutput, lmbd):
+    def backpropagate(self, dC_doutput, lmbd):
+        input = self.input
         grad_act = derivate(RELU)
         input_size = jnp.shape(input)
 
