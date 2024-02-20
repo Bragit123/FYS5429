@@ -69,10 +69,12 @@ class Convolution:
         self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
 
         ## Initialize kernels and biases.
+        self.reset_weights(seed)
+
+    def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
-
     
     def feed_forward(self, input: jnp.ndarray):
         """

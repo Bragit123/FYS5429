@@ -63,6 +63,9 @@ class MaxPool:
 
         self.max_ind = jnp.zeros(self.input_size)
     
+    def reset_weights(self, seed):
+        return 0
+
     def feed_forward(self, input: jnp.ndarray):
         """
         Feeds input forward through the neural network.

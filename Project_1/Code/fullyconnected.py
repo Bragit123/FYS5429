@@ -40,10 +40,12 @@ class FullyConnected:
         self.bias_length = self.output_length
 
         ## Initialize random weights and biases.
+        self.reset_weights(seed)
+
+    def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
         self.bias = random.normal(key=rand_key, shape=(self.bias_length,)) * 0.01
-
 
     def feed_forward(self, input: jnp.ndarray):
         """
