@@ -51,7 +51,7 @@ class FullyConnected:
 
         for i in range(self.input_length):
             for j in range(self.output_length):
-                grad_weights = grad_weights.at[i,j].set(jnp.sum(self.weights[i,j]*grad_act(self.z[j])*grad_cost(output[:,j])))
+                grad_weights = grad_weights.at[i,j].set(jnp.sum(output[:,j]*grad_act(self.z[j])*grad_cost(output[:,j])))
                 grad_biases = grad_biases.at[j,0].set(jnp.sum(1*grad_act(self.z[j])*grad_cost(output[:,j])))
 
         self.weights -= grad_weights*lmbd #Neew to implement scheduler

@@ -43,6 +43,22 @@ image = jnp.array([
 ])
 
 image_shape = jnp.shape(image)
+
+output = jnp.zeros((2,3,2,2))
+for i in range(4):
+    for j in range(4):
+        h_start = i*1
+        h_end = h_start + 2
+        w_start = i*1
+        w_end = w_start + 2
+        input_hw = image[:,:, h_start:h_end, w_start:w_end]
+        argmax_hw = jnp.unravel_index(jnp.argmax(input_hw, axis=(2,3)), jnp.shape(input_hw))
+        argmax = np.array(argmax_hw[:,:,i,j]) + jnp.array([i,j])
+
+
+        output = output.at[:,:,i,j].set(jnp.max(input_hw, axis=(2,3)))
+
+
 kernel_shape = (2,3,2,2)
 
 cnn = Convolution(image_shape, kernel_shape)
