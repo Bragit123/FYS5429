@@ -113,7 +113,7 @@ class Convolution:
         return output
 
     
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight (kernel element), bias and

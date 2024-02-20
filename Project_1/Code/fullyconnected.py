@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from jax import random, vmap
 import jax.numpy as jnp
 from funcs import RELU, derivate
+from scheduler import AdamMomentum
 
 
 class FullyConnected:
@@ -45,7 +46,7 @@ class FullyConnected:
     def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(self.bias_length,)) * 0.01
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,1)) * 0.01
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -70,14 +71,15 @@ class FullyConnected:
         for i in range(num_inputs):
             for j in range(self.output_length):
                 # Weighted sum
-                z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[j])
+                z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[j,0])
 
-        output = RELU(z) # Run z through activation function.
+        self.z = z
+        output = RELU(self.z) # Run z through activation function.
 
         return output
 
 
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -115,7 +117,15 @@ class FullyConnected:
                 grad_input += grad_input.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j] * self.weights[i,j]))
 
         ## Update weights and biases using gradient descent.
-        self.weights -= grad_weights*lmbd # Need to implement scheduler
-        self.bias -= grad_biases*lmbd # Need to implement scheduler
+        # self.weights -= grad_weights*lmbd # Need to implement scheduler
+        # self.bias -= grad_biases*lmbd # Need to implement scheduler
+        
+        scheduler = AdamMomentum(0.01, 0.9, 0.999, 0.001)
+        print("0weights = ", self.weights)
+        print("0bias = ", self.bias)
+        self.weights -= scheduler.update_change(grad_weights)
+        self.bias -= scheduler.update_change(grad_biases)
+        print("1weights = ", self.weights)
+        print("1bias = ", self.bias)
 
         return grad_input

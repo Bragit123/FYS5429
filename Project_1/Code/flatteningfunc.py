@@ -42,7 +42,7 @@ class Flattened_Layer:
     def reset_weights(self, seed):
         return 0
     
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer. Since this layer only reshapes the
         input, the corresponding backpropagation is only to reshape the

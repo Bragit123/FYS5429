@@ -37,22 +37,23 @@ class Network:
         dC_doutput = grad_cost(output)
 
         for i in range(self.num_layers-1, -1, -1):
-            dC_doutput = self.layers[i].backpropagate(dC_doutput, lmbd=0)
+            dC_doutput = self.layers[i].backpropagate(dC_doutput)
 
-    def train(self, input_train, input_val, target_train, target_val, epochs, batches, seed):
+    def train(self, input_train, target_train, input_val = None, target_val = None, epochs=100, batches=1, seed=100):
         self.reset_weights(seed) # Reset weights for new training
         batch_size = input_train.shape[0] // batches
 
         train_cost = self.cost_func(target_train)
-        val_cost = self.cost_func(target_val)
-        
         train_error = jnp.zeros(epochs)
-        val_error = jnp.zeros(epochs)
         train_accuracy = jnp.zeros(epochs)
-        val_accuracy = jnp.zeros(epochs)
+        
+        if input_val is not None:
+            val_cost = self.cost_func(target_val)
+            val_error = jnp.zeros(epochs)
+            val_accuracy = jnp.zeros(epochs)
 
         for e in range(epochs):
-            print("EPOCH: " + e + "/" + epochs)
+            print("EPOCH: " + str(e) + "/" + str(epochs))
             for b in range(batches):
                 if b == batches - 1:
                     input_batch = input_train[b * batch_size :]
@@ -65,19 +66,20 @@ class Network:
                 self.backpropagate(output_batch, target_batch)
 
             train_predict = self.predict(input_train)
-            val_predict = self.predict(input_val)
+            train_error = train_error.at[e].set(train_cost(train_predict))
+            train_accuracy = train_accuracy.at[e].set(jnp.mean(train_predict == target_train))
 
-            train_error[e] = train_cost(train_predict)
-            val_error[e] = val_cost(val_predict)
-
-            val_accuracy[e] = jnp.mean(val_predict == target_val)
-            train_accuracy[e] = jnp.mean(train_predict == target_train)
+            if input_val is not None:
+                val_predict = self.predict(input_val)
+                val_error = val_error.at[e].set(val_cost(val_predict))
+                val_accuracy = val_accuracy.at[e].set(jnp.mean(val_predict == target_val))
         
         score = {
             "train_error": train_error,
-            "val_error": val_error,
             "train_accuracy": train_accuracy,
-            "val_accuracy": val_accuracy
         }
+        if input_val is not None:
+            score["val_error"] = val_error
+            score["val_accuracy"] = val_accuracy
 
         return score
