@@ -1,10 +1,13 @@
 import jax.numpy as jnp
+from jax import vmap
+from network import Network
 from convolution import Convolution
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
-from flatteningfunc import flatten
+from flatteningfunc import Flattened_Layer
+from funcs import CostLogReg, derivate
 
-image = jnp.array([
+input = jnp.array([
     [
         [
             [1, 1, 1, 0],
@@ -42,49 +45,71 @@ image = jnp.array([
     ]
 ])
 
-image_shape = jnp.shape(image)
+input = jnp.array([
+    [0,0],
+    [0,1],
+    [1,0],
+    [1,1]
+])
+target = jnp.array([
+    [0],
+    [1],
+    [1],
+    [0]
+])
 
-output = jnp.zeros((2,3,2,2))
-for i in range(4):
-    for j in range(4):
-        h_start = i*1
-        h_end = h_start + 2
-        w_start = i*1
-        w_end = w_start + 2
-        input_hw = image[:,:, h_start:h_end, w_start:w_end]
-        argmax_hw = jnp.unravel_index(jnp.argmax(input_hw, axis=(2,3)), jnp.shape(input_hw))
-        argmax = np.array(argmax_hw[:,:,i,j]) + jnp.array([i,j])
+cost_func = CostLogReg
+
+cnn = Network(cost_func)
+cnn.add_layer(FullyConnected(input_length=2, output_length=1))
+
+print(cnn.feed_forward(input))
+cnn.train(input, target)
+print(cnn.feed_forward(input))
 
 
-        output = output.at[:,:,i,j].set(jnp.max(input_hw, axis=(2,3)))
+# image_shape = jnp.shape(image)[1:]
+# kernel_shape = (2,3,2,2)
 
+# cnn = Convolution(image_shape, kernel_shape)
+# output = cnn.feed_forward(image)
 
-kernel_shape = (2,3,2,2)
+# # print(output)
 
-cnn = Convolution(image_shape, kernel_shape)
-output = cnn.feed_forward(image)
+# pool = MaxPool(output.shape, jnp.array([2,2]), 1)
+# pool_output = pool.feed_forward(output)
 
-print(output)
+# # print(pool_output)
 
-pool = MaxPool(output.shape, jnp.array([2,2]), 1)
-pool_output = pool.feed_forward(output)
+# flat = Flattened_Layer()
+# input_fully = flat.feed_forward(pool_output)
 
-print(pool_output)
+# # print(input_fully)
 
-input_fully = flatten(pool_output)
+# input_length = jnp.shape(input_fully)[1]
+# output_length = 6
 
-print(input_fully)
+# fc = FullyConnected(input_length,output_length)
+# output_fully = fc.feed_forward(input_fully)
 
-input_shape = jnp.shape(input_fully)
-output_shape = (input_shape[0], 6)
+# # print(output)
 
-fc = FullyConnected(input_shape,output_shape)
-output = fc.feed_forward(input_fully)
+# target = jnp.array([[0,0,0,0,0,1],[0,0,0,0,0,1]])
 
-print(output)
+# # print(fc.weights)
+# gradCost = vmap(vmap(derivate(CostCrossEntropy(target))))
+# dCdoutput = gradCost(output_fully)
+# lmbd = 0.1
 
-target = jnp.array([[0,0,0,0,0,1],[0,0,0,0,0,1]])
+# grad_fc = fc.backpropagate(dCdoutput, lmbd)
 
-print(fc.weights)
-fc.backpropagate(output, target, 0.1)
-print(fc.weights)
+# grad_flat = flat.backpropagate(grad_fc, lmbd)
+
+# grad_pool = pool.backpropagate(grad_flat, lmbd)
+
+# grad_cnn = cnn.backpropagate(grad_pool, lmbd)
+
+# print(jnp.shape(grad_fc), jnp.shape(input_fully))
+# print(jnp.shape(grad_flat), jnp.shape(pool_output))
+# print(jnp.shape(grad_pool), jnp.shape(output))
+# print(jnp.shape(grad_cnn), jnp.shape(image))

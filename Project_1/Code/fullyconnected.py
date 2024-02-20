@@ -21,7 +21,7 @@ class FullyConnected:
 
         self.bias_size = self.bias.shape
 
-        self.loss_func = CostCrossEntropy #we should probably send in loss functions and make them the elements of a dictionary
+        self.loss_func = CostCrossEntropy
 
         # self.reset_weights()
 
