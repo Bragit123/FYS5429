@@ -5,7 +5,7 @@ from convolution import Convolution
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
 from flatteningfunc import Flattened_Layer
-from funcs import CostLogReg, derivate
+from funcs import CostLogReg, CostCrossEntropy, derivate, CostOLS
 
 input = jnp.array([
     [
@@ -61,10 +61,11 @@ target = jnp.array([
 cost_func = CostLogReg
 
 cnn = Network(cost_func)
+cnn.add_layer(FullyConnected(input_length=2, output_length=2))
 cnn.add_layer(FullyConnected(input_length=2, output_length=1))
 
 print(cnn.feed_forward(input))
-cnn.train(input, target)
+cnn.train(input, target, epochs=500, batches=1, seed=100)
 print(cnn.feed_forward(input))
 
 
