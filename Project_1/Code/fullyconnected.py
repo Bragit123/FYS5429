@@ -41,6 +41,8 @@ class FullyConnected:
         self.weights_size = (self.input_length, self.output_length)
         self.bias_length = self.output_length
         self.act_func = act_func
+        self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.01)
+        self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.01)
 
         ## Initialize random weights and biases.
         self.reset_weights(seed)
@@ -107,10 +109,12 @@ class FullyConnected:
         #dC_da = dC_doutput * grad_act(self.z)
         delta_matrix = dC_doutput * grad_act(self.z)
         grad_weights = input.T @ delta_matrix/input_size[0]
-        grad_biases = jnp.sum(delta_matrix, axis=0)/input_size[0]
+        grad_biases = jnp.sum(delta_matrix, axis=0).reshape(1,jnp.shape(delta_matrix)[1])/input_size[0]
         grad_input = delta_matrix@self.weights.T
 
+        # print(f"Before : {grad_weights}")
         grad_weights = grad_weights + self.weights * lmbd
+        # print(f"After : {grad_weights}")
 
         #for i in range(self.input_length):
             #for j in range(self.output_length):
@@ -123,10 +127,10 @@ class FullyConnected:
 
 
         # scheduler_weights = Adam(0.001, 0.9, 0.999)
-        scheduler_weights = AdamMomentum(0.001, 0.9, 0.999, 0.01)
-        self.weights -= scheduler_weights.update_change(grad_weights)
+        self.scheduler_bias.reset()
+        self.scheduler_weights.reset()
+        self.weights -= self.scheduler_weights.update_change(grad_weights)
         # scheduler_bias = Adam(0.001, 0.9, 0.999)
-        scheduler_bias = AdamMomentum(0.001, 0.9, 0.999, 0.01)
-        self.bias -= scheduler_bias.update_change(grad_biases)
+        self.bias -= self.scheduler_bias.update_change(grad_biases)
 
         return grad_input

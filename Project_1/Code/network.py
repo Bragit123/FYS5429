@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 from jax import vmap, grad
 from funcs import derivate
+from sklearn.utils import resample
 from convolution import Convolution
 from flatteningfunc import Flattened_Layer
 from maxpool import MaxPool
@@ -55,6 +56,8 @@ class Network:
             val_cost = self.cost_func(target_val)
             val_error = jnp.zeros(epochs)
             val_accuracy = jnp.zeros(epochs)
+        
+        input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
             print("EPOCH: " + str(e+1) + "/" + str(epochs))
