@@ -78,12 +78,12 @@ class Network:
                 val_error = val_error.at[e].set(val_cost(val_predict))
                 val_accuracy = val_accuracy.at[e].set(jnp.mean(val_predict == target_val))
 
-        score = {
+        scores = {
             "train_error": train_error,
             "train_accuracy": train_accuracy,
         }
         if input_val is not None:
-            score["val_error"] = val_error
-            score["val_accuracy"] = val_accuracy
+            scores["val_error"] = val_error
+            scores["val_accuracy"] = val_accuracy
 
-        return score
+        return scores
