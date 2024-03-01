@@ -5,7 +5,7 @@ from convolution import Convolution
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
 from flatteningfunc import Flattened_Layer
-from funcs import CostLogReg, CostCrossEntropy, derivate, CostOLS
+from funcs import CostLogReg, CostCrossEntropy, derivate, CostOLS, RELU, sigmoid, derivate, softmax, identity
 
 input = jnp.array([
     [
@@ -60,12 +60,24 @@ target = jnp.array([
 
 cost_func = CostLogReg
 
+a = jnp.array([
+    [0,0],
+    [0,1],
+    [1,0],
+    [1,1]
+])
+
+b = jnp.array([1,2])
+
+print(a+b)
+
+
 cnn = Network(cost_func)
-cnn.add_layer(FullyConnected(input_length=2, output_length=2))
-cnn.add_layer(FullyConnected(input_length=2, output_length=1))
+cnn.add_layer(FullyConnected(input_length=2, output_length=5, act_func = sigmoid))
+cnn.add_layer(FullyConnected(input_length=5, output_length=1, act_func = sigmoid))
 
 print(cnn.feed_forward(input))
-cnn.train(input, target, epochs=500, batches=1, seed=100)
+cnn.train(input, target, epochs=100, batches=1, seed=100)
 print(cnn.feed_forward(input))
 
 

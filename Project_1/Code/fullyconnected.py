@@ -4,6 +4,7 @@ from jax import random, vmap
 import jax.numpy as jnp
 from funcs import RELU, sigmoid, derivate
 from scheduler import *
+from typing import Callable
 
 
 class FullyConnected:
@@ -24,7 +25,7 @@ class FullyConnected:
         - bias (ndarray): One-dimensional array containing the biases, with one
           bias for each output value of the layer.
     """
-    def __init__(self, input_length: int, output_length: int, seed: int = 100):
+    def __init__(self, input_length: int, output_length: int, act_func: Callable[[jnp.ndarray],jnp.ndarray], seed: int = 100):
         """
         Constructor
 
@@ -39,6 +40,7 @@ class FullyConnected:
         self.output_length = output_length
         self.weights_size = (self.input_length, self.output_length)
         self.bias_length = self.output_length
+        self.act_func = act_func
 
         ## Initialize random weights and biases.
         self.reset_weights(seed)
@@ -46,7 +48,7 @@ class FullyConnected:
     def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(1,self.bias_length)) 
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -62,23 +64,30 @@ class FullyConnected:
             The axes correspond to the same axes as the input.
         """
         self.input = input # Save input for use in backpropagate().
-        num_inputs = jnp.shape(input)[0]
+        #num_inputs = jnp.shape(input)[0]
 
-        ## Initialize output arrays.
-        output = jnp.zeros((num_inputs, self.output_length))
-        z = jnp.zeros((num_inputs, self.output_length))
 
-        for i in range(num_inputs):
-            for j in range(self.output_length):
-                print(f"i,j = {i},{j}")
+        self.z = input @ self.weights + self.bias
+
+        # calculate a, add bias
+        output = self.act_func(self.z)
+        #self.a_matrix = np.hstack([bias, self.a_matrix])
+
+        # return a, the input for feedforward in next layer
+        #return self.a_matrix
+
+        ## Initialize output arrays.        #output = jnp.zeros((num_inputs, self.output_length))
+        #z = jnp.zeros((num_inputs, self.output_length))
+
+        #for i in range(num_inputs):
+        #    for j in range(self.output_length):
                 # Weighted sum
-                z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[0,j])
+        #        z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:]) + self.bias[0,j])
 
-        self.z = z
-        output = sigmoid(self.z) # Run z through activation function.
+        #self.z = z
+        #output = self.act_func(self.z)  # Run z through activation function.
 
         return output
-
 
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
@@ -102,7 +111,7 @@ class FullyConnected:
             every input value to this layer.
         """
         input = self.input
-        grad_act = vmap(derivate(sigmoid))
+        grad_act = vmap(derivate(self.act_func))
         input_size = jnp.shape(input)
 
         ## Initialize weights and biases.
@@ -115,13 +124,20 @@ class FullyConnected:
                 ## Compute the gradients.
                 grad_weights = grad_weights.at[i,j].set(jnp.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
                 grad_biases = grad_biases.at[j].set(jnp.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
-                grad_input += grad_input.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
+
+                zero_matrix = jnp.zeros(input_size)
+                grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
 
         ## Update weights and biases using gradient descent.
         # self.weights -= grad_weights*lmbd # Need to implement scheduler
         # self.bias -= grad_biases*lmbd # Need to implement scheduler
 
-        scheduler = Adam(0.1, 0.9, 0.999)
-        self.weights -= scheduler.update_change(grad_weights)
-        self.bias -= scheduler.update_change(grad_biases)
+        scheduler_weights = Adam(0.1, 0.9, 0.999)
+        self.weights -= scheduler_weights.update_change(grad_weights)
+        scheduler_bias = Adam(0.1, 0.9, 0.999)
+        #print(grad_biases.shape, "grad_bias")
+        self.bias -= scheduler_bias.update_change(grad_biases)
+        #print(scheduler.update_change(grad_biases).shape, "update")
+        #print(self.bias.shape, "new bias")
+
         return grad_input
