@@ -57,7 +57,7 @@ class Network:
             val_accuracy = jnp.zeros(epochs)
 
         for e in range(epochs):
-            print("EPOCH: " + str(e) + "/" + str(epochs))
+            print("EPOCH: " + str(e+1) + "/" + str(epochs))
             for b in range(batches):
                 if b == batches - 1:
                     input_batch = input_train[b * batch_size :]
