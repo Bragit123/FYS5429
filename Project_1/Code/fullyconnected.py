@@ -70,6 +70,7 @@ class FullyConnected:
 
         for i in range(num_inputs):
             for j in range(self.output_length):
+                print(f"i,j = {i},{j}")
                 # Weighted sum
                 z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:])+self.bias[0,j])
 
