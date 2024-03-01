@@ -74,7 +74,7 @@ class FullyConnected:
 
         return output
 
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.001):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -110,6 +110,8 @@ class FullyConnected:
         grad_biases = jnp.sum(delta_matrix, axis=0)/input_size[0]
         grad_input = delta_matrix@self.weights.T
 
+        grad_weights = grad_weights + self.weights * lmbd
+
         #for i in range(self.input_length):
             #for j in range(self.output_length):
                 ## Compute the gradients.
@@ -120,9 +122,11 @@ class FullyConnected:
             #    grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
 
 
-        scheduler_weights = Adam(0.1, 0.9, 0.999)
+        # scheduler_weights = Adam(0.001, 0.9, 0.999)
+        scheduler_weights = AdamMomentum(0.001, 0.9, 0.999, 0.01)
         self.weights -= scheduler_weights.update_change(grad_weights)
-        scheduler_bias = Adam(0.1, 0.9, 0.999)
+        # scheduler_bias = Adam(0.001, 0.9, 0.999)
+        scheduler_bias = AdamMomentum(0.001, 0.9, 0.999, 0.01)
         self.bias -= scheduler_bias.update_change(grad_biases)
 
         return grad_input
