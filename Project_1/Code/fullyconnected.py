@@ -71,21 +71,6 @@ class FullyConnected:
 
         # calculate a, add bias
         output = self.act_func(self.z)
-        #self.a_matrix = np.hstack([bias, self.a_matrix])
-
-        # return a, the input for feedforward in next layer
-        #return self.a_matrix
-
-        ## Initialize output arrays.        #output = jnp.zeros((num_inputs, self.output_length))
-        #z = jnp.zeros((num_inputs, self.output_length))
-
-        #for i in range(num_inputs):
-        #    for j in range(self.output_length):
-                # Weighted sum
-        #        z = z.at[i,j].set(jnp.sum(self.weights[:,j]*input[i,:]) + self.bias[0,j])
-
-        #self.z = z
-        #output = self.act_func(self.z)  # Run z through activation function.
 
         return output
 
@@ -111,33 +96,33 @@ class FullyConnected:
             every input value to this layer.
         """
         input = self.input
-        grad_act = vmap(derivate(self.act_func))
+        grad_act = vmap(vmap(derivate(self.act_func)))
         input_size = jnp.shape(input)
 
         ## Initialize weights and biases.
-        grad_weights = jnp.zeros(self.weights_size)
-        grad_biases = jnp.zeros(jnp.shape(self.bias))
-        grad_input = jnp.zeros(input_size)
+        #grad_weights = jnp.zeros(self.weights_size)
+        #grad_biases = jnp.zeros(jnp.shape(self.bias))
+        #grad_input = jnp.zeros(input_size)
 
-        for i in range(self.input_length):
-            for j in range(self.output_length):
+        #dC_da = dC_doutput * grad_act(self.z)
+        delta_matrix = dC_doutput * grad_act(self.z)
+        grad_weights = input.T @ delta_matrix/input_size[0]
+        grad_biases = jnp.sum(delta_matrix, axis=0)/input_size[0]
+        grad_input = delta_matrix@self.weights.T
+
+        #for i in range(self.input_length):
+            #for j in range(self.output_length):
                 ## Compute the gradients.
-                grad_weights = grad_weights.at[i,j].set(jnp.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
-                grad_biases = grad_biases.at[j].set(jnp.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
+            #    grad_weights = grad_weights.at[i,j].set(jnp.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
+            #    grad_biases = grad_biases.at[j].set(jnp.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
 
-                zero_matrix = jnp.zeros(input_size)
-                grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
+            #    zero_matrix = jnp.zeros(input_size)
+            #    grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
 
-        ## Update weights and biases using gradient descent.
-        # self.weights -= grad_weights*lmbd # Need to implement scheduler
-        # self.bias -= grad_biases*lmbd # Need to implement scheduler
 
         scheduler_weights = Adam(0.1, 0.9, 0.999)
         self.weights -= scheduler_weights.update_change(grad_weights)
         scheduler_bias = Adam(0.1, 0.9, 0.999)
-        #print(grad_biases.shape, "grad_bias")
         self.bias -= scheduler_bias.update_change(grad_biases)
-        #print(scheduler.update_change(grad_biases).shape, "update")
-        #print(self.bias.shape, "new bias")
 
         return grad_input

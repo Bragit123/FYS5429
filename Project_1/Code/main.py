@@ -60,16 +60,6 @@ target = jnp.array([
 
 cost_func = CostLogReg
 
-a = jnp.array([
-    [0,0],
-    [0,1],
-    [1,0],
-    [1,1]
-])
-
-b = jnp.array([1,2])
-
-print(a+b)
 
 
 cnn = Network(cost_func)
