@@ -98,7 +98,7 @@ class AveragePool:
                 output_hw = jnp.average(input_hw, axis=(2,3))
                 output = output.at[:,:,i,j].set(output_hw) 
         return output
-    @profile
+
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
