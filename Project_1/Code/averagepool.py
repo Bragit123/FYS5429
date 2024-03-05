@@ -98,7 +98,7 @@ class AveragePool:
                 output_hw = jnp.average(input_hw, axis=(2,3))
                 output = output.at[:,:,i,j].set(output_hw) 
         return output
-    
+    @profile
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
@@ -123,7 +123,7 @@ class AveragePool:
         """
         ## Initialize input gradient.
         grad_input = jnp.zeros(jnp.shape(self.input))
-        number_of_outputs = self.output_width*self.output_height
+        dC_output_scaled = dC_doutput/(self.scale_factor*self.scale_factor)
         for i in range(self.output_height):
             ## Define what indices to look at (placement of the pooling window) for this iteration.
             h_start = i*self.stride
@@ -132,7 +132,7 @@ class AveragePool:
                 w_start = j*self.stride
                 w_end = w_start + self.scale_factor
                 ## Find the gradient of the output corresponding to this pooling window and scale them.
-                dC_ij = dC_doutput[:,:,i,j]/(number_of_outputs)
+                dC_ij = dC_output_scaled[:,:,i,j]
                 ## Update the new gradient
                 new_dC = dC_ij[:,:,jnp.newaxis,jnp.newaxis]
                 dC_hw = jnp.full((self.input_size[0],self.input_size[1], self.scale_factor, self.scale_factor),new_dC)
