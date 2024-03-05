@@ -121,12 +121,11 @@ class FullyConnected:
             #    zero_matrix = jnp.zeros(input_size)
             #    grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
 
-
-        # scheduler_weights = Adam(0.001, 0.9, 0.999)
-        scheduler_weights = AdamMomentum(0.001, 0.9, 0.999, 0.01)
+        scheduler_weights = Adam(0.001, 0.9, 0.999)
+        #scheduler_weights = AdamMomentum(0.001, 0.9, 0.999, 0.01)
         self.weights -= scheduler_weights.update_change(grad_weights)
-        # scheduler_bias = Adam(0.001, 0.9, 0.999)
-        scheduler_bias = AdamMomentum(0.001, 0.9, 0.999, 0.01)
+        scheduler_bias = Adam(0.001, 0.9, 0.999)
+        #scheduler_bias = AdamMomentum(0.001, 0.9, 0.999, 0.01)
         self.bias -= scheduler_bias.update_change(grad_biases)
 
         return grad_input
