@@ -56,7 +56,7 @@ class Network:
             val_cost = self.cost_func(target_val)
             val_error = jnp.zeros(epochs)
             val_accuracy = jnp.zeros(epochs)
-        
+
         input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
@@ -82,6 +82,7 @@ class Network:
                 val_error = val_error.at[e].set(val_cost(val_predict))
                 val_accuracy = val_accuracy.at[e].set(jnp.mean(val_predict == target_val))
                 val_output = self.feed_forward(input_val)
+
 
         scores = {
             "train_error": train_error,

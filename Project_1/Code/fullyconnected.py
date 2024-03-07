@@ -41,8 +41,8 @@ class FullyConnected:
         self.weights_size = (self.input_length, self.output_length)
         self.bias_length = self.output_length
         self.act_func = act_func
-        self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.01)
-        self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.01)
+        self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
+        self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
 
         ## Initialize random weights and biases.
         self.reset_weights(seed)
@@ -50,7 +50,11 @@ class FullyConnected:
     def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
+<<<<<<< HEAD
         self.bias = random.normal(key=rand_key, shape=(self.bias_length,))*0.01
+=======
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))*10
+>>>>>>> 74063df3262fe6d9f0a73aecde894d2cd684aa47
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -97,6 +101,7 @@ class FullyConnected:
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
+        self.grad_weights = 0
         input = self.input
         grad_act = vmap(vmap(derivate(self.act_func)))
         input_size = jnp.shape(input)
@@ -113,7 +118,7 @@ class FullyConnected:
         grad_input = delta_matrix@self.weights.T
 
         # print(f"Before : {grad_weights}")
-        grad_weights = grad_weights + self.weights * lmbd
+        self.grad_weights = grad_weights + self.weights * lmbd
         # print(f"After : {grad_weights}")
 
         #for i in range(self.input_length):
@@ -129,7 +134,7 @@ class FullyConnected:
         # scheduler_weights = Adam(0.001, 0.9, 0.999)
         self.scheduler_bias.reset()
         self.scheduler_weights.reset()
-        self.weights -= self.scheduler_weights.update_change(grad_weights)
+        self.weights -= self.scheduler_weights.update_change(self.grad_weights)
         # scheduler_bias = Adam(0.001, 0.9, 0.999)
         self.bias -= self.scheduler_bias.update_change(grad_biases)
 
