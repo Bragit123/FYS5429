@@ -25,26 +25,28 @@ X_shape = jnp.shape(X)
 t_shape = jnp.shape(t)
 n_nodes_hidden = 100
 
-input_layer = FullyConnected(X_shape[1], n_nodes_hidden, sigmoid)
-output_layer = FullyConnected(n_nodes_hidden, t_shape[1], sigmoid)
+input_layer = FullyConnected(X_shape[1], n_nodes_hidden, act_func)
+# hidden_layer = FullyConnected(n_nodes_hidden, n_nodes_hidden, sigmoid)
+output_layer = FullyConnected(n_nodes_hidden, t_shape[1], act_func)
 
 # Create network
 network = Network(cost_func)
 network.add_layer(input_layer)
+# network.add_layer(hidden_layer)
 network.add_layer(output_layer)
 
 # pred = network.feed_forward(X)
 # print(pred)
-
 # Train network
-scores = network.train(X_train, t_train, X_val, t_val, epochs=200)
-print(jnp.max(scores["train_accuracy"]))
-epoch_arr = jnp.arange(200)
+scores = network.train(X_train, t_train, X_val, t_val, epochs=300)
+print(jnp.argmax(scores["train_accuracy"]))
+epoch_arr = jnp.arange(300)
 
 plt.title("Accuracies")
 plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
-# plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
 plt.xlabel("Epoch")
 plt.ylabel("Accuracy")
 plt.legend()
-plt.savefig("accuracy.pdf")
+plt.show()
+#plt.savefig("accuracy.pdf")
