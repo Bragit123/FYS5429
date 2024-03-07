@@ -72,6 +72,7 @@ class Network:
                 output_batch = self.feed_forward(input_batch)
                 self.backpropagate(output_batch, target_batch)
 
+            train_output = self.feed_forward(input_train)
             train_predict = self.predict(input_train)
             train_error = train_error.at[e].set(train_cost(train_predict))
             train_accuracy = train_accuracy.at[e].set(jnp.mean(train_predict == target_train))
@@ -80,13 +81,18 @@ class Network:
                 val_predict = self.predict(input_val)
                 val_error = val_error.at[e].set(val_cost(val_predict))
                 val_accuracy = val_accuracy.at[e].set(jnp.mean(val_predict == target_val))
+                val_output = self.feed_forward(input_val)
 
         scores = {
             "train_error": train_error,
             "train_accuracy": train_accuracy,
+            "train_predict": train_predict,
+            "train_output": train_output
         }
         if input_val is not None:
             scores["val_error"] = val_error
             scores["val_accuracy"] = val_accuracy
+            scores["val_predict"] = val_predict
+            scores["val_output"] = val_output
 
         return scores
