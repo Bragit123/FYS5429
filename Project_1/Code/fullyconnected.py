@@ -41,8 +41,8 @@ class FullyConnected:
         self.weights_size = (self.input_length, self.output_length)
         self.bias_length = self.output_length
         self.act_func = act_func
-        self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
-        self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
+        self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.001) #temporary
+        self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.001) #temporary
 
         ## Initialize random weights and biases.
         self.reset_weights(seed)
@@ -50,7 +50,7 @@ class FullyConnected:
     def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))*10
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -76,7 +76,7 @@ class FullyConnected:
 
         return output
 
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.001):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -97,7 +97,7 @@ class FullyConnected:
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        self.grad_weights = 0
+        #self.grad_weights = 0
         input = self.input
         grad_act = vmap(vmap(derivate(self.act_func)))
         input_size = jnp.shape(input)

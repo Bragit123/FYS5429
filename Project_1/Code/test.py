@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from funcs import CostLogReg, sigmoid
+from funcs import CostLogReg, sigmoid, CostCrossEntropy
 from network import Network
 from fullyconnected import FullyConnected
 

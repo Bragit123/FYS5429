@@ -58,13 +58,13 @@ target = jnp.array([
     [0]
 ])
 
-cost_func = CostLogReg
+cost_func = CostOLS
 
 
 
 cnn = Network(cost_func)
-cnn.add_layer(FullyConnected(input_length=2, output_length=5, act_func = sigmoid))
-cnn.add_layer(FullyConnected(input_length=5, output_length=1, act_func = sigmoid))
+cnn.add_layer(FullyConnected(input_length=2, output_length=3, act_func = sigmoid))
+cnn.add_layer(FullyConnected(input_length=3, output_length=1, act_func = sigmoid))
 
 print(cnn.feed_forward(input))
 cnn.train(input, target, epochs=100, batches=1, seed=100)
