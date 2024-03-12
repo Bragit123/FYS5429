@@ -42,6 +42,7 @@ scores = network.train(X_train, t_train, X_val, t_val, epochs=300)
 print(jnp.argmax(scores["train_accuracy"]))
 epoch_arr = jnp.arange(300)
 
+plt.figure()
 plt.title("Accuracies")
 plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
 plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
