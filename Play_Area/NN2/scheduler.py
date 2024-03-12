@@ -95,6 +95,9 @@ class AdagradMomentum(Scheduler):
             delta + jnp.sqrt(jnp.reshape(jnp.diagonal(self.G_t), (self.G_t.shape[0], 1)))
         )
         self.change = self.change * self.momentum + self.eta * gradient * G_t_inverse
+        print("Change")
+        print(self.change)
+        print()
         return self.change
 
     def reset(self):
@@ -146,6 +149,7 @@ class Adam(Scheduler):
 
     def update_change(self, gradient):
         delta = 1e-8  # avoid division ny zero
+
         self.moment = self.rho * self.moment + (1 - self.rho) * gradient
         self.second = self.rho2 * self.second + (1 - self.rho2) * gradient * gradient
 

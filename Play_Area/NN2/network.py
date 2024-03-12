@@ -1,4 +1,4 @@
-import jax.numpy as jnp
+import numpy as np
 from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
@@ -17,24 +17,24 @@ class Network:
         self.layers.append(layer)
         self.num_layers += 1
 
-    def reset_weights(self, seed):
+    def reset_weights(self):
         for layer in self.layers:
-            layer.reset_weights(seed)
+            layer.reset_weights()
     
     def reset_schedulers(self):
         for layer in self.layers:
             layer.reset_schedulers()
 
-    def feed_forward(self, input: jnp.ndarray):
+    def feed_forward(self, input: np.ndarray):
         layer_output = self.layers[0].feed_forward(input)
         for i in range(1, self.num_layers):
             layer_output = self.layers[i].feed_forward(layer_output)
 
         return layer_output
 
-    def predict(self, input: jnp.ndarray):
+    def predict(self, input: np.ndarray):
         output = self.feed_forward(input)
-        predicted = jnp.where(output > 0.5, 1, 0)
+        predicted = np.where(output > 0.5, 1, 0)
         return predicted
 
     def backpropagate(self, output, target):
@@ -49,17 +49,17 @@ class Network:
             dC_doutput = self.layers[i].backpropagate(dC_doutput)
 
     def train(self, input_train, target_train, input_val = None, target_val = None, epochs=100, batches=1, seed=100):
-        self.reset_weights(seed) # Reset weights for new training
+        # self.reset_weights() # Reset weights for new training
         batch_size = input_train.shape[0] // batches
 
         train_cost = self.cost_func(target_train)
-        train_error = jnp.zeros(epochs)
-        train_accuracy = jnp.zeros(epochs)
+        train_error = np.zeros(epochs)
+        train_accuracy = np.zeros(epochs)
 
         if input_val is not None:
             val_cost = self.cost_func(target_val)
-            val_error = jnp.zeros(epochs)
-            val_accuracy = jnp.zeros(epochs)
+            val_error = np.zeros(epochs)
+            val_accuracy = np.zeros(epochs)
 
         input_train, target_train = resample(input_train, target_train, replace=False)
 
@@ -75,18 +75,18 @@ class Network:
 
                 output_batch = self.feed_forward(input_batch)
                 self.backpropagate(output_batch, target_batch)
-
-            self.reset_schedulers()
             
+            self.reset_schedulers()
+
             train_output = self.feed_forward(input_train)
             train_predict = self.predict(input_train)
-            train_error = train_error.at[e].set(train_cost(train_predict))
-            train_accuracy = train_accuracy.at[e].set(jnp.mean(train_predict == target_train))
+            train_error[e] = train_cost(train_predict)
+            train_accuracy[e] = np.mean(train_predict == target_train)
 
             if input_val is not None:
                 val_predict = self.predict(input_val)
-                val_error = val_error.at[e].set(val_cost(val_predict))
-                val_accuracy = val_accuracy.at[e].set(jnp.mean(val_predict == target_val))
+                val_error[e] = val_cost(val_predict)
+                val_accuracy[e] = np.mean(val_predict == target_val)
                 val_output = self.feed_forward(input_val)
 
 
