@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
-from jax import random, vmap
-import jax.numpy as jnp
+from jax import vmap
+import numpy as np
 from funcs import RELU, sigmoid, derivate
 from typing import Callable
 from copy import copy
@@ -25,7 +25,7 @@ class FullyConnected:
         - bias (ndarray): One-dimensional array containing the biases, with one
           bias for each output value of the layer.
     """
-    def __init__(self, input_length: int, output_length: int, act_func: Callable[[jnp.ndarray],jnp.ndarray], scheduler, seed: int = 100):
+    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 200):
         """
         Constructor
 
@@ -49,15 +49,15 @@ class FullyConnected:
         self.reset_weights(seed)
 
     def reset_weights(self, seed):
-        rand_key = random.PRNGKey(seed)
-        self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))
+        np.random.seed(seed)
+        self.weights = np.random.normal(size=self.weights_size)
+        self.bias = np.random.normal(size=(1, self.bias_length))
     
     def reset_schedulers(self):
         self.scheduler_weights.reset()
         self.scheduler_bias.reset()
 
-    def feed_forward(self, input: jnp.ndarray):
+    def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
 
@@ -71,7 +71,7 @@ class FullyConnected:
             The axes correspond to the same axes as the input.
         """
         self.input = input # Save input for use in backpropagate().
-        #num_inputs = jnp.shape(input)[0]
+        #num_inputs = np.shape(input)[0]
         self.z = input @ self.weights + self.bias
 
         # calculate a, add bias
@@ -79,7 +79,7 @@ class FullyConnected:
 
         return output
 
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
+    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -103,17 +103,17 @@ class FullyConnected:
         #self.grad_weights = 0
         input = self.input
         grad_act = vmap(vmap(derivate(self.act_func)))
-        input_size = jnp.shape(input)
+        input_size = np.shape(input)
 
         ## Initialize weights and biases.
-        #grad_weights = jnp.zeros(self.weights_size)
-        #grad_biases = jnp.zeros(jnp.shape(self.bias))
-        #grad_input = jnp.zeros(input_size)
+        #grad_weights = np.zeros(self.weights_size)
+        #grad_biases = np.zeros(np.shape(self.bias))
+        #grad_input = np.zeros(input_size)
 
         #dC_da = dC_doutput * grad_act(self.z)
         delta_matrix = dC_doutput * grad_act(self.z)
         grad_weights = input.T @ delta_matrix/input_size[0]
-        grad_biases = jnp.sum(delta_matrix, axis=0).reshape(jnp.shape(delta_matrix)[1],)/input_size[0]
+        grad_biases = np.sum(delta_matrix, axis=0).reshape(1, np.shape(delta_matrix)[1])/input_size[0]
         grad_input = delta_matrix@self.weights.T
 
         # print(f"Before : {grad_weights}")
@@ -123,10 +123,10 @@ class FullyConnected:
         #for i in range(self.input_length):
             #for j in range(self.output_length):
                 ## Compute the gradients.
-            #    grad_weights = grad_weights.at[i,j].set(jnp.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
-            #    grad_biases = grad_biases.at[j].set(jnp.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
+            #    grad_weights = grad_weights.at[i,j].set(np.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
+            #    grad_biases = grad_biases.at[j].set(np.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
 
-            #    zero_matrix = jnp.zeros(input_size)
+            #    zero_matrix = np.zeros(input_size)
             #    grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
 
 

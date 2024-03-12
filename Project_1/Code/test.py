@@ -27,13 +27,14 @@ X_shape = jnp.shape(X)
 t_shape = jnp.shape(t)
 n_nodes_hidden = 100
 
-# scheduler = AdamMomentum(0.01, 0.9, 0.999, 0.001) #temporary
-scheduler = Adam(0.01, 0.9, 0.999) #temporary
+scheduler = AdamMomentum(0.01, 0.9, 0.999, 0.001) #temporary
+# scheduler = Adam(0.01, 0.9, 0.999) #temporary
+# scheduler = AdagradMomentum(0.01, 0.001) #temporary
 # scheduler = Constant(0.1) #temporary
 
-input_layer = FullyConnected(X_shape[1], n_nodes_hidden, act_func, Adam(0.01, 0.9, 0.999))
+input_layer = FullyConnected(X_shape[1], n_nodes_hidden, act_func, copy(scheduler))
 # hidden_layer = FullyConnected(n_nodes_hidden, n_nodes_hidden, sigmoid)
-output_layer = FullyConnected(n_nodes_hidden, t_shape[1], act_func, Adam(0.01, 0.9, 0.999))
+output_layer = FullyConnected(n_nodes_hidden, t_shape[1], act_func, copy(scheduler))
 
 # Create network
 network = Network(cost_func)
