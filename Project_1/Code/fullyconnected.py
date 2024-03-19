@@ -50,7 +50,7 @@ class FullyConnected:
     def reset_weights(self, seed):
         rand_key = random.PRNGKey(seed)
         self.weights = random.normal(key=rand_key, shape=self.weights_size)
-        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))*0.1
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -76,7 +76,7 @@ class FullyConnected:
 
         return output
 
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
+    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.001):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -112,9 +112,10 @@ class FullyConnected:
         grad_weights = input.T @ delta_matrix/input_size[0]
         grad_biases = jnp.sum(delta_matrix, axis=0).reshape(1,jnp.shape(delta_matrix)[1])/input_size[0]
         grad_input = delta_matrix@self.weights.T
+        #grad_input = self.weights.T@delta_matrix
 
         # print(f"Before : {grad_weights}")
-        self.grad_weights = grad_weights + self.weights * lmbd
+        grad_weights = grad_weights + self.weights * lmbd
         # print(f"After : {grad_weights}")
 
         #for i in range(self.input_length):
@@ -130,7 +131,7 @@ class FullyConnected:
         # scheduler_weights = Adam(0.001, 0.9, 0.999)
         self.scheduler_bias.reset()
         self.scheduler_weights.reset()
-        self.weights -= self.scheduler_weights.update_change(self.grad_weights)
+        self.weights -= self.scheduler_weights.update_change(grad_weights)
         # scheduler_bias = Adam(0.001, 0.9, 0.999)
         self.bias -= self.scheduler_bias.update_change(grad_biases)
 

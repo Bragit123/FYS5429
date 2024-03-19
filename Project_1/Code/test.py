@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from funcs import CostLogReg, sigmoid, CostCrossEntropy
+from funcs import CostLogReg, sigmoid, CostCrossEntropy, softmax
 from network import Network
 from fullyconnected import FullyConnected
 
@@ -18,7 +18,7 @@ X = cancer.data
 X = minmax_scale(X, feature_range=(0,1), axis=0)
 t = cancer.target
 t = jnp.c_[t]
-X_train, X_val, t_train, t_val = train_test_split(X, t, test_size=0.2)
+X_train, X_val, t_train, t_val = train_test_split(X, t, test_size=0.2, random_state=100)
 
 # Layers
 X_shape = jnp.shape(X)

@@ -181,7 +181,7 @@ class AdamMomentum(Scheduler):
         moment_corrected = self.moment / (1 - self.rho**self.n_epochs)
         second_corrected = self.second / (1 - self.rho2**self.n_epochs)
 
-        self.change = self.change*self.momentum +self.eta * moment_corrected / (jnp.sqrt(second_corrected + delta))
+        self.change = self.change*self.momentum + self.eta * moment_corrected / (jnp.sqrt(second_corrected + delta))
         return self.change
 
     def reset(self):
