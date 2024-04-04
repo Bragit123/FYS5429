@@ -64,7 +64,7 @@ class Network:
         input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
-            print("EPOCH: " + str(e+1) + "/" + str(epochs))
+            print("EPOCH: " + str(e+1) + "/" + str(epochs), end="\r")
             for b in range(batches):
                 if b == batches - 1:
                     input_batch = input_train[b * batch_size :]

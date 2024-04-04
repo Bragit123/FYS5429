@@ -25,7 +25,7 @@ class FullyConnected:
         - bias (ndarray): One-dimensional array containing the biases, with one
           bias for each output value of the layer.
     """
-    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 200):
+    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
         """
         Constructor
 

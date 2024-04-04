@@ -1,4 +1,4 @@
-import jax.numpy as jnp
+import numpy as np
 import matplotlib.pyplot as plt
 from funcs import CostLogReg, sigmoid, CostCrossEntropy, softmax
 from network import Network
@@ -10,31 +10,38 @@ from sklearn import datasets
 from sklearn.preprocessing import minmax_scale
 from sklearn.model_selection import train_test_split
 
-# Cost function
-cost_func = CostLogReg
-act_func = sigmoid
-
-# Load dataset
+# Load cancer dataset
 cancer = datasets.load_breast_cancer()
 X = cancer.data
-X = minmax_scale(X, feature_range=(0,1), axis=0)
 t = cancer.target
-t = jnp.c_[t]
+t = np.c_[t]
+
+X = minmax_scale(X, feature_range=(0,1), axis=0)
+
 X_train, X_val, t_train, t_val = train_test_split(X, t, test_size=0.2, random_state=100)
 
+# Set values for neural network
+act_func = sigmoid
+cost_func = CostLogReg
+
+# Set constants
+rho = 0.9
+rho2 = 0.999
+momentum = 0.01
+batches = 10
+epochs = 100
+
 # Layers
-X_shape = jnp.shape(X)
-t_shape = jnp.shape(t)
+X_shape = np.shape(X)
+t_shape = np.shape(t)
 n_nodes_hidden = 100
 
-
-
-etas = [0.001]
+etas = [0.01]
 lmds = [0.001]
 for eta in etas:
     for lmbd in lmds:
         #scheduler = AdamMomentum(eta, 0.9, 0.999, 0.01) #temporary
-        scheduler = Adam(eta, 0.9, 0.999) #temporary
+        scheduler = Adam(eta, rho, rho2) #temporary
         #scheduler = AdagradMomentum(0.01, 0.001) #temporary
         #scheduler = Constant(0.1) #temporary
         #scheduler = Momentum(eta, 0.01)
@@ -54,10 +61,8 @@ for eta in etas:
         # pred = network.feed_forward(X)
         # print(pred)
         # Train network
-        epochs = 200
-        scores = network.train(X_train, t_train, X_val, t_val, epochs=epochs, batches=10, lmbd = lmbd)
-        print(jnp.argmax(scores["train_accuracy"]))
-        epoch_arr = jnp.arange(epochs)
+        scores = network.train(X_train, t_train, X_val, t_val, epochs=epochs, batches=batches, lmbd = lmbd)
+        epoch_arr = np.arange(epochs)
 
         plt.figure()
         plt.title("Accuracies")
