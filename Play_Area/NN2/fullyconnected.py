@@ -1,10 +1,10 @@
 
 import matplotlib.pyplot as plt
-from jax import vmap
+from jax import random, vmap
 import numpy as np
 from funcs import RELU, sigmoid, derivate
+from scheduler import *
 from typing import Callable
-from copy import copy
 
 
 class FullyConnected:
@@ -25,7 +25,7 @@ class FullyConnected:
         - bias (ndarray): One-dimensional array containing the biases, with one
           bias for each output value of the layer.
     """
-    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 200):
+    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], seed: int = 100):
         """
         Constructor
 
@@ -41,22 +41,26 @@ class FullyConnected:
         self.weights_size = (self.input_length, self.output_length)
         self.bias_length = self.output_length
         self.act_func = act_func
-        
-        self.scheduler_weights = copy(scheduler)
-        self.scheduler_bias = copy(scheduler)
+        # self.scheduler_weights = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
+        # self.scheduler_bias = AdamMomentum(0.01, 0.9, 0.999, 0.01) #temporary
+        # self.scheduler_weights = Adam(0.01, 0.9, 0.999) #temporary
+        # self.scheduler_bias = Adam(0.01, 0.9, 0.999) #temporary
+        self.scheduler_weights = Adagrad(0.01) #temporary
+        self.scheduler_bias = Adagrad(0.01) #temporary
+
+        self.seed = seed
 
         ## Initialize random weights and biases.
-        self.reset_weights(seed)
+        self.reset_weights()
 
-    def reset_weights(self, seed):
-        np.random.seed(seed)
-        self.weights = np.random.normal(size=self.weights_size)
-        self.bias = np.random.normal(size=(1, self.bias_length))*0.01
+    def reset_weights(self):
+        rand_key = random.PRNGKey(self.seed)
+        self.weights = random.normal(key=rand_key, shape=self.weights_size)
+        self.bias = random.normal(key=rand_key, shape=(self.bias_length,))*0.1
     
     def reset_schedulers(self):
         self.scheduler_weights.reset()
         self.scheduler_bias.reset()
-
 
     def feed_forward(self, input: np.ndarray):
         """
@@ -73,6 +77,8 @@ class FullyConnected:
         """
         self.input = input # Save input for use in backpropagate().
         #num_inputs = np.shape(input)[0]
+
+
         self.z = input @ self.weights + self.bias
 
         # calculate a, add bias
@@ -80,7 +86,7 @@ class FullyConnected:
 
         return output
 
-    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
+    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 1e-4):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight, bias and input value. The
@@ -101,7 +107,6 @@ class FullyConnected:
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        #self.grad_weights = 0
         input = self.input
         grad_act = vmap(vmap(derivate(self.act_func)))
         input_size = np.shape(input)
@@ -114,12 +119,11 @@ class FullyConnected:
         #dC_da = dC_doutput * grad_act(self.z)
         delta_matrix = dC_doutput * grad_act(self.z)
         grad_weights = input.T @ delta_matrix/input_size[0]
-        grad_biases = np.sum(delta_matrix, axis=0).reshape(1, np.shape(delta_matrix)[1])/input_size[0]
-        grad_input = delta_matrix @ self.weights.T
-        #grad_input = self.weights.T@delta_matrix
+        grad_biases = np.sum(delta_matrix, axis=0).reshape(1,np.shape(delta_matrix)[1])/input_size[0]
+        grad_input = delta_matrix@self.weights.T
 
         # print(f"Before : {grad_weights}")
-        grad_weights = grad_weights + self.weights * lmbd
+        self.grad_weights = grad_weights + self.weights * lmbd
         # print(f"After : {grad_weights}")
 
         #for i in range(self.input_length):
@@ -133,12 +137,16 @@ class FullyConnected:
 
 
         # scheduler_weights = Adam(0.001, 0.9, 0.999)
-
-        # self.scheduler_bias.reset()
-        # self.scheduler_weights.reset()
-        self.weights -= self.scheduler_weights.update_change(grad_weights)
+        
+        # print("Weights")
+        update_weights = self.scheduler_weights.update_change(self.grad_weights)
+        print(update_weights)
+        self.weights -= update_weights
         # scheduler_bias = Adam(0.001, 0.9, 0.999)
+        # print("Bias")
         update_bias = self.scheduler_bias.update_change(grad_biases)
+        # print(update_bias)
         self.bias -= update_bias
+        # print()
 
         return grad_input

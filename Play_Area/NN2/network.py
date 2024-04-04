@@ -17,9 +17,9 @@ class Network:
         self.layers.append(layer)
         self.num_layers += 1
 
-    def reset_weights(self, seed):
+    def reset_weights(self):
         for layer in self.layers:
-            layer.reset_weights(seed)
+            layer.reset_weights()
     
     def reset_schedulers(self):
         for layer in self.layers:
@@ -37,8 +37,8 @@ class Network:
         predicted = np.where(output > 0.5, 1, 0)
         return predicted
 
-    def backpropagate(self, output, target, lmbd = 0.1):
-        grad_cost = derivate(self.cost_func(target))
+    def backpropagate(self, output, target):
+        grad_cost = vmap(vmap(derivate(self.cost_func(target))))
         dC_doutput = grad_cost(output)
 
         #print(-(1.0 / target.shape[0]) * (target/(output+10**(-10))-(1-target)/(1-output+10**(-10))))
@@ -46,10 +46,10 @@ class Network:
 
 
         for i in range(self.num_layers-1, -1, -1):
-            dC_doutput = self.layers[i].backpropagate(dC_doutput, lmbd = lmbd)
+            dC_doutput = self.layers[i].backpropagate(dC_doutput)
 
-    def train(self, input_train, target_train, input_val = None, target_val = None, epochs=100, batches=1, lmbd = 0.1, seed=100):
-        self.reset_weights(seed) # Reset weights for new training
+    def train(self, input_train, target_train, input_val = None, target_val = None, epochs=100, batches=1, seed=100):
+        # self.reset_weights() # Reset weights for new training
         batch_size = input_train.shape[0] // batches
 
         train_cost = self.cost_func(target_train)
@@ -74,10 +74,10 @@ class Network:
                     target_batch = target_train[b * batch_size : (b+1) * batch_size]
 
                 output_batch = self.feed_forward(input_batch)
-                self.backpropagate(output_batch, target_batch, lmbd)
-
-            self.reset_schedulers()
+                self.backpropagate(output_batch, target_batch)
             
+            self.reset_schedulers()
+
             train_output = self.feed_forward(input_train)
             train_predict = self.predict(input_train)
             train_error[e] = train_cost(train_predict)
