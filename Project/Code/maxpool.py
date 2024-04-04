@@ -40,10 +40,9 @@ class MaxPool:
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            0: Input depth.
+            1: Number of rows.
+            2: Number of columns.
         - scale_factor (int): Number of rows and columns of the pooling window.
           This value is an integer, as we only consider square pooling windows
           (equal number of rows and columns).
@@ -52,18 +51,22 @@ class MaxPool:
           the layer.
         """
         self.input_size = input_size
-        self.num_inputs, self.input_depth, self.input_height, self.input_width = self.input_size
+        self.input_depth, self.input_height, self.input_width = self.input_size
         self.scale_factor = scale_factor
         self.stride = stride
 
         # Computing output size.
         self.output_height = int(jnp.floor((self.input_height - self.scale_factor) / self.stride) + 1)
         self.output_width = int(jnp.floor((self.input_width - self.scale_factor) / self.stride) + 1)
-        self.output_size = (self.num_inputs, self.input_depth, self.output_height, self.output_width)
 
-        self.max_ind = jnp.zeros(self.input_size)
+        self.output_size = None
+        self.max_ind_size = None
+        self.max_ind = None
     
     def reset_weights(self, seed):
+        return 0
+    
+    def reset_schedulers(self):
         return 0
 
     def feed_forward(self, input: jnp.ndarray):
@@ -86,7 +89,10 @@ class MaxPool:
         self.input = input
 
         ## Initialize max_ind and output
-        max_ind = jnp.zeros(self.input_size)
+        num_inputs = self.input.shape[0]
+        self.max_ind_size = (num_inputs,) + self.input_size
+        self.output_size = (num_inputs, self.input_depth, self.output_height, self.output_width)
+        max_ind = jnp.zeros(self.max_ind_size)
         output = jnp.zeros(self.output_size)
 
         for i in range(self.output_height):
@@ -106,7 +112,7 @@ class MaxPool:
                 compare = output_hw[:,:,jnp.newaxis,jnp.newaxis]
                 max_ind_hw = jnp.where(compare == input_hw, 1, 0)
 
-                zero_matrix = jnp.zeros(self.input_size)
+                zero_matrix = jnp.zeros(self.max_ind_size)
                 max_ind += zero_matrix.at[:,:, h_start:h_end, w_start:w_end].set(max_ind_hw) # Plus, to avoid overwriting previous ones.
 
         # The pooling window might find the same maximum more than one time,
@@ -157,7 +163,7 @@ class MaxPool:
                 dC_hw = jnp.where(self.max_ind[:,:, h_start:h_end, w_start:w_end] == 1, new_dC, 0)
                 
                 ## Add the gradient value to gradient_input at the correct positions (where the input had a maximum). 
-                zero_matrix = jnp.zeros(self.input_size)
+                zero_matrix = jnp.zeros(self.max_ind_size)
                 grad_input += zero_matrix.at[:,:, h_start:h_end, w_start:w_end].set(dC_hw) # Plus, to account for same max positions.
         
         return grad_input

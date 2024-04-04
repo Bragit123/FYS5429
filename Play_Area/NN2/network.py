@@ -3,7 +3,7 @@ from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
 from convolution import Convolution
-from flatteningfunc import Flattened_Layer
+from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
 
@@ -13,7 +13,7 @@ class Network:
         self.layers = []
         self.num_layers = 0
 
-    def add_layer(self, layer: Convolution | Flattened_Layer | MaxPool | FullyConnected):
+    def add_layer(self, layer: Convolution | FlattenedLayer | MaxPool | FullyConnected):
         self.layers.append(layer)
         self.num_layers += 1
 

@@ -44,10 +44,9 @@ class Convolution:
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            0: Input depth.
+            1: Number of rows.
+            2: Number of columns.
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
@@ -75,6 +74,9 @@ class Convolution:
         rand_key = random.PRNGKey(seed)
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
+    
+    def reset_schedulers(self):
+        return 0
     
     def feed_forward(self, input: jnp.ndarray):
         """
