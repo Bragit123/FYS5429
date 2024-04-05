@@ -1,7 +1,6 @@
 from scipy.signal import correlate2d, convolve2d
 import matplotlib.pyplot as plt
 from jax import random
-import jax.numpy as jnp
 from funcs import RELU
 import numpy as np
 
@@ -73,8 +72,8 @@ class Convolution(Layer):
 
         ## Initialize kernels and biases.
 
-    def reset_weights(self, seed):
-        rand_key = np.random.seed(seed)
+    def reset_weights(self):
+        seed = np.random.seed(self.seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
     
@@ -106,7 +105,7 @@ class Convolution(Layer):
         output_size = (num_inputs,) + self.bias_size
 
         ## Initialize output array.
-        output = jnp.zeros(output_size)
+        output = np.zeros(output_size)
         for n in range(num_inputs):
             for i in range(self.num_kernels):
                 for c in range(self.input_depth):
