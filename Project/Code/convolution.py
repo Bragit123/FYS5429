@@ -73,17 +73,10 @@ class Convolution(Layer):
 
         ## Initialize kernels and biases.
 
-<<<<<<< HEAD
     def reset_weights(self, seed):
         rand_key = np.random.seed(seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
-=======
-    def reset_weights(self):
-        rand_key = random.PRNGKey(self.seed)
-        self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
-        self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
->>>>>>> 8a83cecabac2f8cc3a5a5adb7d7d6d2f06d1f514
     
     def reset_schedulers(self):
         return 0
