@@ -4,7 +4,9 @@ from jax import random
 import jax.numpy as jnp
 from funcs import RELU
 
-class Convolution:
+from layer import Layer
+
+class Convolution(Layer):
     """
     Convolution layer. Uses convolution with one or more kernels to detect
     patterns in the input data.
@@ -56,6 +58,7 @@ class Convolution:
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
+        super().__init__(seed)
         self.input_size = input_size
         self.kernel_size = kernel_size
         
@@ -68,10 +71,9 @@ class Convolution:
         self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
 
         ## Initialize kernels and biases.
-        self.reset_weights(seed)
 
-    def reset_weights(self, seed):
-        rand_key = random.PRNGKey(seed)
+    def reset_weights(self):
+        rand_key = random.PRNGKey(self.seed)
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
     

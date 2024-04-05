@@ -1,6 +1,8 @@
 import jax.numpy as jnp
 
-class MaxPool:
+from layer import Layer
+
+class MaxPool(Layer):
     """
     Maxpool layer. Reduces the size of the input in order to increase the
     efficiency of further computation. Reduces size by taking sections of the
@@ -50,6 +52,7 @@ class MaxPool:
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
+        super().__init__(seed)
         self.input_size = input_size
         self.input_depth, self.input_height, self.input_width = self.input_size
         self.scale_factor = scale_factor
@@ -63,7 +66,7 @@ class MaxPool:
         self.max_ind_size = None
         self.max_ind = None
     
-    def reset_weights(self, seed):
+    def reset_weights(self):
         return 0
     
     def reset_schedulers(self):

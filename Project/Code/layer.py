@@ -23,4 +23,3 @@ class Layer:
     # Must be overwritten
     def backpropagate(self, dC_doutput: np.ndarray, lmbd: float):
         raise NotImplementedError
-    

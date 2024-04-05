@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 from jax import random
 import jax.numpy as jnp
 
-class FlattenedLayer:
+from layer import Layer
+
+class FlattenedLayer(Layer):
     """
     Flattened layer. Used for transforming the previous layer into one
     dimension, in order to run through a regular neural network.
@@ -10,8 +12,9 @@ class FlattenedLayer:
     ## Attributes:
         - input_shape (ndarray): Shape of the input to the layer.
     """
-    def __init__(self):
+    def __init__(self, seed: int = 100):
         """ Constructor """
+        super().__init__(seed)
         self.input_shape = None
     
     def feed_forward(self, input: jnp.ndarray):
@@ -39,7 +42,7 @@ class FlattenedLayer:
 
         return flattened_output
     
-    def reset_weights(self, seed):
+    def reset_weights(self):
         return 0
     
     def reset_schedulers(self):
