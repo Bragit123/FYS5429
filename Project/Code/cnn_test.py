@@ -63,7 +63,7 @@ network.add_Flattened_layer()
 network.add_FullyConnected_layer(20, act_func, copy(scheduler))
 network.add_FullyConnected_layer(10, act_func, copy(scheduler))
 
-epochs = 50
+epochs = 10
 batches = 1
 lmbd = 0.001
 scores = network.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)

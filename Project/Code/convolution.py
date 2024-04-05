@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from jax import random
 import jax.numpy as jnp
 from funcs import RELU
+import numpy as np
 
 from layer import Layer
 
@@ -72,10 +73,17 @@ class Convolution(Layer):
 
         ## Initialize kernels and biases.
 
+<<<<<<< HEAD
+    def reset_weights(self, seed):
+        rand_key = np.random.seed(seed)
+        self.kernels = np.random.normal(size=self.kernel_size)
+        self.bias = np.random.normal(size=self.bias_size) * 0.01
+=======
     def reset_weights(self):
         rand_key = random.PRNGKey(self.seed)
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
+>>>>>>> 8a83cecabac2f8cc3a5a5adb7d7d6d2f06d1f514
     
     def reset_schedulers(self):
         return 0
@@ -83,7 +91,8 @@ class Convolution(Layer):
     def find_output_shape(self):
         return self.bias_size
     
-    def feed_forward(self, input: jnp.ndarray):
+    @profile
+    def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
 
@@ -101,7 +110,7 @@ class Convolution(Layer):
             and columns should have decreased.
         """
         self.input = input
-        num_inputs = jnp.shape(input)[0]
+        num_inputs = np.shape(input)[0]
         output_size = (num_inputs,) + self.bias_size
 
         ## Initialize output array.
@@ -111,7 +120,9 @@ class Convolution(Layer):
                 for c in range(self.input_depth):
                     ## Correlate input with the kernels.
                     corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
-                    output = output.at[n,i,:,:].set(jnp.sum(corr, axis=1))
+                    output[n,i,:,:] = np.sum(corr, axis=1)
+
+        print("forward prop end")
 
         ## Compute output using activation function.
         output = RELU(output)
@@ -119,7 +130,7 @@ class Convolution(Layer):
         return output
 
     
-    def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
+    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight (kernel element), bias and
@@ -144,25 +155,27 @@ class Convolution(Layer):
             as dC_doutput.
         """
         input = self.input
-        input_shape = jnp.shape(input)
+        input_shape = np.shape(input)
         
         ## Initialize gradients.
-        grad_kernel = jnp.zeros(self.kernel_size)
-        grad_biases = jnp.zeros(self.bias_size)
-        grad_input = jnp.zeros(input_shape)
+        grad_kernel = np.zeros(self.kernel_size)
+        grad_biases = np.zeros(self.bias_size)
+        grad_input = np.zeros(input_shape)
 
-        kernel_zeros = jnp.zeros(jnp.shape(grad_kernel))
-        input_zeros = jnp.zeros(jnp.shape(grad_input))
+        kernel_zeros = np.zeros(np.shape(grad_kernel))
+        input_zeros = np.zeros(np.shape(grad_input))
 
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
-                    grad_kernel += kernel_zeros.at[i,d,:,:].set(correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid"))
-                    grad_input += input_zeros.at[n,d,:,:].set(convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full"))
+                    grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
+                    grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
+
+        print("backpropagate end")
 
         ## Compute the gradient with respect to biases.
-        grad_biases = jnp.sum(dC_doutput, axis=0)
+        grad_biases = np.sum(dC_doutput, axis=0)
 
         ## Update the kernels and biases using gradient descent.
         self.kernels -= grad_kernel * lmbd
