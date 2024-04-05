@@ -73,17 +73,10 @@ class Convolution(Layer):
 
         ## Initialize kernels and biases.
 
-<<<<<<< HEAD
-    def reset_weights(self, seed):
+    def reset_weights(self, seed = 100):
         rand_key = np.random.seed(seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
-=======
-    def reset_weights(self):
-        rand_key = random.PRNGKey(self.seed)
-        self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
-        self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
->>>>>>> 8a83cecabac2f8cc3a5a5adb7d7d6d2f06d1f514
     
     def reset_schedulers(self):
         return 0
@@ -112,9 +105,6 @@ class Convolution(Layer):
 
         ## Initialize output array.
         output = np.zeros(output_size)
-        
-        self.kernels.shape[2]
-        self.kernels.shape[3]
 
         # for i in range(0, self.input_height - self.kernel_height, 1): #can change 1 with stride possibly
         #     for j in range(0, self.input_width - self.kernel_width, 1):
@@ -133,7 +123,7 @@ class Convolution(Layer):
 
         return output
 
-    
+    @profile
     def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
