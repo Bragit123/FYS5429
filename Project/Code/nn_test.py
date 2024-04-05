@@ -15,11 +15,6 @@ import numpy as np
 # Load cancer dataset
 cancer = datasets.load_breast_cancer()
 X = cancer.data
-<<<<<<< HEAD:Project_1/Code/test.py
-X = X
-X = minmax_scale(X, feature_range=(0,1), axis=0)
-=======
->>>>>>> 5836ba58fe18a7d53b99024983bafb71ad40702f:Project/Code/nn_test.py
 t = cancer.target
 t = np.c_[t]
 
@@ -43,7 +38,6 @@ X_shape = np.shape(X)
 t_shape = np.shape(t)
 n_nodes_hidden = 100
 
-<<<<<<< HEAD:Project_1/Code/test.py
 
 
 eta0 = -4; eta1 = -1; n_eta = eta1-eta0+1
@@ -65,14 +59,6 @@ for i in range(len(etas)):
     for j in range(len(lmds)):
         #scheduler = AdamMomentum(eta, 0.9, 0.999, 0.01) #temporary
         scheduler = Adam(etas[i], rho, rho2) #temporary
-=======
-etas = [0.01]
-lmds = [0.001]
-for eta in etas:
-    for lmbd in lmds:
-        #scheduler = AdamMomentum(eta, 0.9, 0.999, 0.01) #temporary
-        scheduler = Adam(eta, rho, rho2) #temporary
->>>>>>> 5836ba58fe18a7d53b99024983bafb71ad40702f:Project/Code/nn_test.py
         #scheduler = AdagradMomentum(0.01, 0.001) #temporary
         #scheduler = Constant(0.1) #temporary
         #scheduler = Momentum(eta, 0.01)
@@ -84,25 +70,21 @@ for eta in etas:
         output_layer = FullyConnected(n_nodes_hidden, t_shape[1], act_func, copy(scheduler))
 
         # Create network
-        network = Network(cost_func)
-        network.add_layer(input_layer)
-        # network.add_layer(hidden_layer)
-        network.add_layer(output_layer)
+        network = Network(cost_func, X_shape[1])
+        # network.add_layer(input_layer)
+        # network.add_layer(output_layer)
+        network.add_FullyConnected_layer(n_nodes_hidden, act_func, copy(scheduler))
+        network.add_FullyConnected_layer(t_shape[1], act_func, copy(scheduler))
 
         # pred = network.feed_forward(X)
         # print(pred)
         # Train network
-<<<<<<< HEAD:Project_1/Code/test.py
         print(f"eta: {etas[i]}, lmbd: {lmds[j]}")
         scores = network.train(X_train, t_train, X_val, t_val, epochs=epochs, batches=batches, lmbd = lmds[j])
         print(np.argmax(scores["train_accuracy"]))
         epoch_arr = jnp.arange(epochs)
         train_accs[i,j] = scores["train_accuracy"][-1]
         val_accs[i,j] = scores["val_accuracy"][-1]
-=======
-        scores = network.train(X_train, t_train, X_val, t_val, epochs=epochs, batches=batches, lmbd = lmbd)
-        epoch_arr = np.arange(epochs)
->>>>>>> 5836ba58fe18a7d53b99024983bafb71ad40702f:Project/Code/nn_test.py
 
         if i== 2 and j == 0:  #Best accuracy
             plt.figure()

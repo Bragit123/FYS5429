@@ -59,7 +59,9 @@ class FullyConnected(Layer):
     def reset_schedulers(self):
         self.scheduler_weights.reset()
         self.scheduler_bias.reset()
-
+    
+    def find_output_shape(self) -> tuple | int:
+        return self.output_length
 
     def feed_forward(self, input: np.ndarray):
         """

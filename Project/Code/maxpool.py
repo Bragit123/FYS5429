@@ -71,6 +71,9 @@ class MaxPool(Layer):
     
     def reset_schedulers(self):
         return 0
+    
+    def find_output_shape(self):
+        return (self.input_depth, self.output_height, self.output_width)
 
     def feed_forward(self, input: jnp.ndarray):
         """
