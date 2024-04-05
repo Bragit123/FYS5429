@@ -3,11 +3,9 @@ from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
 from convolution import Convolution
-from flatteningfunc import Flattened_Layer
+from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from fullyconnected import FullyConnected
-
-
 
 class Network:
     def __init__(self, cost_func):
@@ -15,7 +13,7 @@ class Network:
         self.layers = []
         self.num_layers = 0
 
-    def add_layer(self, layer: Convolution | Flattened_Layer | MaxPool | FullyConnected):
+    def add_layer(self, layer: Convolution | FlattenedLayer | MaxPool | FullyConnected):
         self.layers.append(layer)
         self.num_layers += 1
 
@@ -30,20 +28,15 @@ class Network:
     def feed_forward(self, input: np.ndarray):
         layer_output = self.layers[0].feed_forward(input)
         for i in range(1, self.num_layers):
-            print(self.layers[i])
             layer_output = self.layers[i].feed_forward(layer_output)
 
         return layer_output
 
-    def predict(self, input: np.ndarray = None, output = None):
-        if input is not None:
-            output = self.feed_forward(input)
-            predicted = np.where(output > 0.5, 1, 0)
-            return predicted
-        else:
-            predicted = np.where(output > 0.5, 1, 0)
-            return predicted
-        
+    def predict(self, input: np.ndarray):
+        output = self.feed_forward(input)
+        predicted = np.where(output > 0.5, 1, 0)
+        return predicted
+
     def backpropagate(self, output, target, lmbd = 0.1):
         grad_cost = derivate(self.cost_func(target))
         dC_doutput = grad_cost(output)
@@ -86,16 +79,15 @@ class Network:
             self.reset_schedulers()
             
             train_output = self.feed_forward(input_train)
-            train_predict = self.predict(input = None, output = train_output)
+            train_predict = self.predict(input_train)
             train_error[e] = train_cost(train_predict)
             train_accuracy[e] = np.mean(train_predict == target_train)
 
             if input_val is not None:
-                val_output = self.feed_forward(input_val)
-                val_predict = self.predict(input = None, output = val_output) 
+                val_predict = self.predict(input_val)
                 val_error[e] = val_cost(val_predict)
                 val_accuracy[e] = np.mean(val_predict == target_val)
-                
+                val_output = self.feed_forward(input_val)
 
 
         scores = {

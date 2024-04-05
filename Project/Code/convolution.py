@@ -44,10 +44,9 @@ class Convolution:
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            0: Input depth.
+            1: Number of rows.
+            2: Number of columns.
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
@@ -76,6 +75,9 @@ class Convolution:
         self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
         self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
     
+    def reset_schedulers(self):
+        return 0
+    
     def feed_forward(self, input: jnp.ndarray):
         """
         Feeds input forward through the neural network.
@@ -99,13 +101,16 @@ class Convolution:
 
         ## Initialize output array.
         output = jnp.zeros(output_size)
-
+        
+        print("forward prop start")
         for n in range(num_inputs):
             for i in range(self.num_kernels):
                 for c in range(self.input_depth):
                     ## Correlate input with the kernels.
                     corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
                     output = output.at[n,i,:,:].set(jnp.sum(corr, axis=1))
+
+        print("forward prop end")
 
         ## Compute output using activation function.
         output = RELU(output)
@@ -148,13 +153,16 @@ class Convolution:
         kernel_zeros = jnp.zeros(jnp.shape(grad_kernel))
         input_zeros = jnp.zeros(jnp.shape(grad_input))
 
+        print("backpropagate begin")
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
                     grad_kernel += kernel_zeros.at[i,d,:,:].set(correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid"))
                     grad_input += input_zeros.at[n,d,:,:].set(convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full"))
-        
+
+        print("backpropagate end")
+
         ## Compute the gradient with respect to biases.
         grad_biases = jnp.sum(dC_doutput, axis=0)
 

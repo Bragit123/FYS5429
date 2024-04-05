@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from jax import random
 import jax.numpy as jnp
 
-class Flattened_Layer:
+class FlattenedLayer:
     """
     Flattened layer. Used for transforming the previous layer into one
     dimension, in order to run through a regular neural network.
@@ -42,6 +42,9 @@ class Flattened_Layer:
     def reset_weights(self, seed):
         return 0
     
+    def reset_schedulers(self):
+        return 0
+    
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer. Since this layer only reshapes the
@@ -60,5 +63,4 @@ class Flattened_Layer:
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        input_shape = jnp.shape(self.input)
-        return jnp.reshape(dC_doutput, input_shape)
+        return jnp.reshape(dC_doutput, self.input_shape)
