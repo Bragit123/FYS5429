@@ -84,7 +84,6 @@ class Convolution(Layer):
     def find_output_shape(self):
         return self.bias_size
     
-    @profile
     def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
