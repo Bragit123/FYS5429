@@ -2,10 +2,7 @@ import numpy as np
 from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
-from convolution import Convolution
-from flattenedlayer import FlattenedLayer
-from maxpool import MaxPool
-from fullyconnected import FullyConnected
+from layer import Layer
 
 class Network:
     def __init__(self, cost_func):
@@ -13,13 +10,13 @@ class Network:
         self.layers = []
         self.num_layers = 0
 
-    def add_layer(self, layer: Convolution | FlattenedLayer | MaxPool | FullyConnected):
+    def add_layer(self, layer: Layer):
         self.layers.append(layer)
         self.num_layers += 1
 
-    def reset_weights(self, seed):
+    def reset_weights(self):
         for layer in self.layers:
-            layer.reset_weights(seed)
+            layer.reset_weights()
     
     def reset_schedulers(self):
         for layer in self.layers:
@@ -49,7 +46,7 @@ class Network:
             dC_doutput = self.layers[i].backpropagate(dC_doutput, lmbd = lmbd)
 
     def train(self, input_train, target_train, input_val = None, target_val = None, epochs=100, batches=1, lmbd = 0.1, seed=100):
-        self.reset_weights(seed) # Reset weights for new training
+        self.reset_weights() # Reset weights for new training
         batch_size = input_train.shape[0] // batches
 
         train_cost = self.cost_func(target_train)

@@ -6,8 +6,10 @@ from funcs import RELU, sigmoid, derivate
 from typing import Callable
 from copy import copy
 
+from layer import Layer
 
-class FullyConnected:
+
+class FullyConnected(Layer):
     """
     Fully connected layer. Defines a number of output nodes, and computes a
     weighted sum of the input for each output, and runs the resulting value
@@ -36,6 +38,7 @@ class FullyConnected:
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
+        super().__init__(seed)
         self.input_length = input_length
         self.output_length = output_length
         self.weights_size = (self.input_length, self.output_length)
@@ -46,10 +49,10 @@ class FullyConnected:
         self.scheduler_bias = copy(scheduler)
 
         ## Initialize random weights and biases.
-        self.reset_weights(seed)
+        self.reset_weights()
 
-    def reset_weights(self, seed):
-        np.random.seed(seed)
+    def reset_weights(self):
+        np.random.seed(self.seed)
         self.weights = np.random.normal(size=self.weights_size)
         self.bias = np.random.normal(size=(1, self.bias_length))*0.01
     

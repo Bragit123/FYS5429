@@ -5,7 +5,9 @@ import jax.numpy as jnp
 from funcs import RELU
 import numpy as np
 
-class Convolution:
+from layer import Layer
+
+class Convolution(Layer):
     """
     Convolution layer. Uses convolution with one or more kernels to detect
     patterns in the input data.
@@ -57,6 +59,7 @@ class Convolution:
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
+        super().__init__(seed)
         self.input_size = input_size
         self.kernel_size = kernel_size
         
@@ -69,12 +72,18 @@ class Convolution:
         self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
 
         ## Initialize kernels and biases.
-        self.reset_weights(seed)
 
+<<<<<<< HEAD
     def reset_weights(self, seed):
         rand_key = np.random.seed(seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
+=======
+    def reset_weights(self):
+        rand_key = random.PRNGKey(self.seed)
+        self.kernels = random.normal(key=rand_key, shape=self.kernel_size)
+        self.bias = random.normal(key=rand_key, shape=self.bias_size) * 0.01
+>>>>>>> 8a83cecabac2f8cc3a5a5adb7d7d6d2f06d1f514
     
     def reset_schedulers(self):
         return 0
