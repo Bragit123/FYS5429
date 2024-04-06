@@ -1,6 +1,8 @@
 import jax.numpy as jnp
-
+import numpy as np
+from jax import jit, lax
 from layer import Layer
+from functools import partial
 
 class MaxPool(Layer):
     """
@@ -35,6 +37,7 @@ class MaxPool(Layer):
           where maximum values are retrieved from when pooling, in order to
           backpropagate.
     """
+
     def __init__(self, input_size: tuple, scale_factor: int, stride: int, seed: int = 100):
         """
         Constructor
@@ -75,7 +78,8 @@ class MaxPool(Layer):
     def find_output_shape(self):
         return (self.input_depth, self.output_height, self.output_width)
 
-    def feed_forward(self, input: jnp.ndarray):
+
+    def feed_forward(self, input: jnp.ndarray) -> jnp.array:
         """
         Feeds input forward through the neural network.
 
@@ -98,8 +102,8 @@ class MaxPool(Layer):
         num_inputs = self.input.shape[0]
         self.max_ind_size = (num_inputs,) + self.input_size
         self.output_size = (num_inputs, self.input_depth, self.output_height, self.output_width)
-        max_ind = jnp.zeros(self.max_ind_size)
-        output = jnp.zeros(self.output_size)
+        max_ind = np.zeros(self.max_ind_size)
+        output = np.zeros(self.output_size)
 
         for i in range(self.output_height):
             ## Define what indices to pool (placement of the pooling window) for this iteration.
@@ -111,23 +115,24 @@ class MaxPool(Layer):
                 input_hw = input[:,:, h_start:h_end, w_start:w_end]
 
                 ## Find maximum within pooling window, and update output array.
-                output_hw = jnp.max(input_hw, axis=(2,3))
-                output = output.at[:,:,i,j].set(output_hw)
+                output_hw = np.max(input_hw, axis=(2,3))
+                output[:, :, i, j] = output_hw
 
                 ## Trace back where the maximum value(s) found place, and update max_ind accordingly.
-                compare = output_hw[:,:,jnp.newaxis,jnp.newaxis]
-                max_ind_hw = jnp.where(compare == input_hw, 1, 0)
+                compare = output_hw[:,:,np.newaxis,np.newaxis]
+                max_ind_hw = np.where(compare == input_hw, 1, 0)
 
-                zero_matrix = jnp.zeros(self.max_ind_size)
-                max_ind += zero_matrix.at[:,:, h_start:h_end, w_start:w_end].set(max_ind_hw) # Plus, to avoid overwriting previous ones.
+                zero_matrix = np.zeros(self.max_ind_size)
+                max_ind[:, :, h_start:h_end, w_start:w_end] += max_ind_hw
 
         # The pooling window might find the same maximum more than one time,
         # depending on the choice of stride and scale_factor. Change every
         # non-zero value in max_ind to 1 to avoid double counting.
-        self.max_ind = jnp.where(max_ind > 0, 1, 0)
+        self.max_ind = np.where(max_ind > 0, 1, 0)
 
         return output
     
+
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
@@ -151,7 +156,8 @@ class MaxPool(Layer):
             as dC_doutput, but will have more rows and columns.
         """
         ## Initialize input gradient.
-        grad_input = jnp.zeros(jnp.shape(self.input))
+        dC_doutput = np.asarray(dC_doutput)
+        grad_input = np.zeros(self.input.shape)
 
         for i in range(self.output_height):
             ## Define what indices to look at (placement of the pooling window) for this iteration.
@@ -165,11 +171,9 @@ class MaxPool(Layer):
                 dC_ij = dC_doutput[:,:,i,j]
 
                 ## Relate the output gradient value to the input values corresponding to the maximum in the pooling.
-                new_dC = dC_ij[:,:,jnp.newaxis,jnp.newaxis]
-                dC_hw = jnp.where(self.max_ind[:,:, h_start:h_end, w_start:w_end] == 1, new_dC, 0)
+                new_dC = dC_ij[:,:,np.newaxis,np.newaxis]
+                dC_hw = np.where(self.max_ind[:,:, h_start:h_end, w_start:w_end] == 1, new_dC, 0)
                 
-                ## Add the gradient value to gradient_input at the correct positions (where the input had a maximum). 
-                zero_matrix = jnp.zeros(self.max_ind_size)
-                grad_input += zero_matrix.at[:,:, h_start:h_end, w_start:w_end].set(dC_hw) # Plus, to account for same max positions.
-        
+                grad_input[:, :, h_start:h_end, w_start:w_end] += dC_hw
+                
         return grad_input
