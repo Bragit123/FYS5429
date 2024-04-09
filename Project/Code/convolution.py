@@ -1,7 +1,6 @@
 from scipy.signal import correlate2d, convolve2d
 import matplotlib.pyplot as plt
 from jax import random
-import jax.numpy as jnp
 from funcs import RELU
 import numpy as np
 
@@ -73,15 +72,17 @@ class Convolution(Layer):
 
         ## Initialize kernels and biases.
 
-    def reset_weights(self, seed = 100):
-        rand_key = np.random.seed(seed)
+    def reset_weights(self):
+        seed = np.random.seed(self.seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
     
     def reset_schedulers(self):
         return 0
     
-    @profile
+    def find_output_shape(self):
+        return self.bias_size
+    
     def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
@@ -165,7 +166,6 @@ class Convolution(Layer):
                     ## Compute gradients with respect to kernels and input.
                     grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
                     grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
-
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)

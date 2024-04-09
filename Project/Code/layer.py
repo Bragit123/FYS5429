@@ -15,6 +15,10 @@ class Layer:
     # Overwrite if layer has schedulers
     def reset_schedulers(self):
         pass
+
+    # Must be overwritten
+    def find_output_shape(self) -> tuple | int:
+        raise NotImplementedError
     
     # Must be overwritten
     def feed_forward(self, input: np.ndarray):

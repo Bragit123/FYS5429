@@ -3,12 +3,18 @@ from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
 from layer import Layer
+from convolution import Convolution
+from maxpool import MaxPool
+from flattenedlayer import FlattenedLayer
+from fullyconnected import FullyConnected
 
 class Network:
-    def __init__(self, cost_func):
+    def __init__(self, cost_func, input_shape: tuple | int, seed: int = 100):
+        self.seed = seed
         self.cost_func = cost_func
         self.layers = []
         self.num_layers = 0
+        self.input_shape = input_shape
 
     def add_layer(self, layer: Layer):
         self.layers.append(layer)
@@ -100,3 +106,43 @@ class Network:
             scores["val_output"] = val_output
 
         return scores
+    
+    def next_layer_input_shape(self):
+        if self.num_layers == 0:
+            input_shape = self.input_shape
+        
+        else:
+            prev_layer = self.layers[-1]
+            input_shape = prev_layer.find_output_shape()
+        
+        return input_shape
+
+    ## Methods for adding layers
+    def add_Convolution_layer(self, kernel_size: tuple):
+        input_shape = self.next_layer_input_shape()
+        cnn_layer = Convolution(input_shape, kernel_size, self.seed)
+        
+        self.layers.append(cnn_layer)
+        self.num_layers += 1
+    
+    def add_MaxPool_layer(self, scale_factor, stride):
+        input_shape = self.next_layer_input_shape()
+        maxpool_layer = MaxPool(input_shape, scale_factor, stride, self.seed)
+
+        self.layers.append(maxpool_layer)
+        self.num_layers += 1
+    
+    def add_Flattened_layer(self):
+        input_shape = self.next_layer_input_shape()
+        flattened_layer = FlattenedLayer(input_shape, self.seed)
+
+        self.layers.append(flattened_layer)
+        self.num_layers += 1
+
+    def add_FullyConnected_layer(self, output_length, act_func, scheduler):
+        input_shape = self.next_layer_input_shape()
+        fc_layer = FullyConnected(input_shape, output_length, act_func, scheduler, self.seed)
+        
+        self.layers.append(fc_layer)
+        self.num_layers += 1
+                

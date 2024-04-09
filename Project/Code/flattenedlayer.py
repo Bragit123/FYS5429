@@ -10,12 +10,17 @@ class FlattenedLayer(Layer):
     dimension, in order to run through a regular neural network.
 
     ## Attributes:
-        - input_shape (ndarray): Shape of the input to the layer.
+        - input_shape (ndarray): Shape of the input to the layer (depth, height,
+          width).
+        - input_size (ndarray): Shape of the input to the layer, including how
+          many inputs (inputs, depth, height, width).
     """
-    def __init__(self, seed: int = 100):
+    def __init__(self, input_shape: tuple, seed: int = 100):
         """ Constructor """
         super().__init__(seed)
-        self.input_shape = None
+        self.input_shape = input_shape
+        self.input_size = None
+        self.num_inputs = None
     
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -34,11 +39,12 @@ class FlattenedLayer(Layer):
             first axis is the same as the input, while the second output contains
             the flattened array of the three last axes of the input.
         """
-        self.input_shape = jnp.shape(input) # Save input shape for use in backpropagate().
-        length_flattened = self.input_shape[1]*self.input_shape[2]*self.input_shape[3]
+        self.num_inputs = input.shape[0]
+        self.input_size = jnp.shape(input) # Save input shape for use in backpropagate().
+        length_flattened = self.input_shape[0]*self.input_shape[1]*self.input_shape[2]
 
         # Flattens the last three axes while keeping the first.
-        flattened_output = jnp.reshape(input, (self.input_shape[0], length_flattened))
+        flattened_output = jnp.reshape(input, (self.num_inputs, length_flattened))
 
         return flattened_output
     
@@ -47,6 +53,10 @@ class FlattenedLayer(Layer):
     
     def reset_schedulers(self):
         return 0
+
+    def find_output_shape(self):
+        output_length = self.input_shape[0]*self.input_shape[1]*self.input_shape[2]
+        return output_length
     
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
         """
@@ -66,4 +76,6 @@ class FlattenedLayer(Layer):
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        return jnp.reshape(dC_doutput, self.input_shape)
+        input_size = (self.num_inputs, self.input_shape[0], self.input_shape[1], self.input_shape[2])
+        dC_dinput = jnp.reshape(dC_doutput, input_size)
+        return dC_dinput

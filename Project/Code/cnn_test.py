@@ -9,6 +9,7 @@ from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from scheduler import Adam
 from funcs import CostLogReg, sigmoid, RELU
+from copy import copy
 # from plotting import * #Various plotting functions, we will use heatmap
 
 digits = datasets.mnist.load_data(path="mnist.npz")
@@ -44,23 +45,27 @@ act_func = sigmoid
 scheduler = Adam(0.1, 0.9, 0.999)
 
 # Layers
-conv = Convolution(input_size, kernel_size)
-pool = MaxPool(pool_input_size, scale_factor, stride)
-conv2 = Convolution(input_size2, kernel_size)
-pool2 = MaxPool(pool_input_size2, scale_factor, stride)
-flat = FlattenedLayer()
-fc = FullyConnected(fc_size, 10, act_func, scheduler)
-#out = FullyConnected(20, 10, act_func, scheduler)
+# conv = Convolution(input_size, kernel_size)
+# pool = MaxPool(pool_input_size, scale_factor, stride)
+# flat = FlattenedLayer()
+# fc = FullyConnected(fc_size, 20, act_func, scheduler)
+# out = FullyConnected(20, 10, act_func, scheduler)
 
 # Network
-network = Network(cost_func)
-network.add_layer(conv)
-network.add_layer(pool)
-network.add_layer(conv2)
-network.add_layer(pool2)
-network.add_layer(flat)
-network.add_layer(fc)
-#network.add_layer(out)
+network = Network(cost_func, input_size)
+# network.add_layer(conv)
+# network.add_layer(pool)
+# network.add_layer(flat)
+# network.add_layer(fc)
+# network.add_layer(out)
+
+network.add_Convolution_layer(kernel_size)
+network.add_MaxPool_layer(scale_factor, stride)
+#network.add_Convolution_layer(kernel_size)
+#network.add_MaxPool_layer(scale_factor, stride)
+network.add_Flattened_layer()
+network.add_FullyConnected_layer(20, act_func, copy(scheduler))
+network.add_FullyConnected_layer(10, act_func, copy(scheduler))
 
 epochs = 10
 batches = 1
