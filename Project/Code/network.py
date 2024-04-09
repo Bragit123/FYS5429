@@ -1,10 +1,10 @@
 import numpy as np
-from jax import vmap, grad
 from funcs import derivate
 from sklearn.utils import resample
 from layer import Layer
 from convolution import Convolution
 from maxpool import MaxPool
+from averagepool import AveragePool
 from flattenedlayer import FlattenedLayer
 from fullyconnected import FullyConnected
 
@@ -12,7 +12,7 @@ class Network:
     def __init__(self, cost_func, input_shape: tuple | int, seed: int = 100):
         self.seed = seed
         self.cost_func = cost_func
-        self.layers = []
+        self.layers: list[Layer] = []
         self.num_layers = 0
         self.input_shape = input_shape
 
@@ -28,7 +28,7 @@ class Network:
         for layer in self.layers:
             layer.reset_schedulers()
 
-    def feed_forward(self, input: np.ndarray):
+    def feed_forward(self, input: np.ndarray) -> np.ndarray:
         layer_output = self.layers[0].feed_forward(input)
         for i in range(1, self.num_layers):
             layer_output = self.layers[i].feed_forward(layer_output)
@@ -67,7 +67,8 @@ class Network:
         input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
-            print("EPOCH: " + str(e+1) + "/" + str(epochs), end="\r")
+            print(f"EPOCH: {e+1} / {epochs}")
+            print("EPOCH: " + str(e+1) + "/" + str(epochs))
             for b in range(batches):
                 if b == batches - 1:
                     input_batch = input_train[b * batch_size :]
@@ -130,6 +131,13 @@ class Network:
         maxpool_layer = MaxPool(input_shape, scale_factor, stride, self.seed)
 
         self.layers.append(maxpool_layer)
+        self.num_layers += 1
+    
+    def add_AveragePool_layer(self, scale_factor, stride):
+        input_shape = self.next_layer_input_shape()
+        averagepool_layer = AveragePool(input_shape, scale_factor, stride, self.seed)
+
+        self.layers.append(averagepool_layer)
         self.num_layers += 1
     
     def add_Flattened_layer(self):

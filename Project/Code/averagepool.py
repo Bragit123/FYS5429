@@ -1,6 +1,8 @@
 import jax.numpy as jnp
+import numpy as np
+from layer import Layer
 
-class AveragePool:
+class AveragePool(Layer):
     """
     Averagepool layer. Reduces the size of the input in order to increase the
     efficiency of further computation. Reduces size by taking sections of the
@@ -48,20 +50,29 @@ class AveragePool:
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
+        super().__init__(seed)
         self.input_size = input_size
-        self.num_inputs, self.input_depth, self.input_height, self.input_width = self.input_size
+        self.input_depth, self.input_height, self.input_width = self.input_size
         self.scale_factor = scale_factor
         self.stride = stride
 
         # Computing output size.
+
         self.output_height = int(jnp.floor((self.input_height - self.scale_factor) / self.stride) + 1)
         self.output_width = int(jnp.floor((self.input_width - self.scale_factor) / self.stride) + 1)
-        self.output_size = (self.num_inputs, self.input_depth, self.output_height, self.output_width)
+
+        self.output_size = None
 
 
     
-    def reset_weights(self, seed):
+    def reset_weights(self):
         return 0
+    
+    def reset_schedulers(self):
+        return 0
+    
+    def find_output_shape(self):
+        return (self.input_depth, self.output_height, self.output_width)
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -81,9 +92,10 @@ class AveragePool:
             and columns should have decreased.
         """
         self.input = input
-
         ## Initialize output
-        output = jnp.zeros(self.output_size)
+        num_inputs = self.input.shape[0]
+        self.output_size = (num_inputs, self.input_depth, self.output_height, self.output_width)
+        output = np.zeros(self.output_size)
 
         for i in range(self.output_height):
             ## Define what indices to pool (placement of the pooling window) for this iteration.
@@ -95,8 +107,8 @@ class AveragePool:
                 input_hw = input[:,:, h_start:h_end, w_start:w_end]
 
                 ## Find average within pooling window, and update output array.
-                output_hw = jnp.average(input_hw, axis=(2,3))
-                output = output.at[:,:,i,j].set(output_hw) 
+                output_hw = np.average(input_hw, axis=(2,3))
+                output[:,:,i,j] = output_hw 
         return output
 
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
@@ -122,8 +134,9 @@ class AveragePool:
             as dC_doutput, but will have more rows and columns.
         """
         ## Initialize input gradient.
-        grad_input = jnp.zeros(jnp.shape(self.input))
-        dC_output_scaled = dC_doutput/(self.scale_factor*self.scale_factor)
+        dC_output_scaled = np.asarray(dC_doutput)/(self.scale_factor*self.scale_factor)
+        grad_input = np.zeros(self.input.shape)
+
         for i in range(self.output_height):
             ## Define what indices to look at (placement of the pooling window) for this iteration.
             h_start = i*self.stride
@@ -134,10 +147,8 @@ class AveragePool:
                 ## Find the gradient of the output corresponding to this pooling window and scale them.
                 dC_ij = dC_output_scaled[:,:,i,j]
                 ## Update the new gradient
-                new_dC = dC_ij[:,:,jnp.newaxis,jnp.newaxis]
-                dC_hw = jnp.full((self.input_size[0],self.input_size[1], self.scale_factor, self.scale_factor),new_dC)
-                zero_matrix = jnp.zeros(self.input_size)
-                grad_input += zero_matrix.at[:,:, h_start:h_end, w_start:w_end].set(dC_hw) # Plus, to account for multiple contributions
+                new_dC = dC_ij[:,:,np.newaxis,np.newaxis]
+                grad_input[:,:,w_start:w_end, h_start:h_end] += new_dC # Plus, to account for multiple contributions
         
         return grad_input
 
