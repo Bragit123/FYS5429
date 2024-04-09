@@ -123,8 +123,7 @@ class Convolution(Layer):
         output = RELU(output)
 
         return output
-
-    @profile
+    
     def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
