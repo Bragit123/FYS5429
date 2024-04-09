@@ -113,8 +113,6 @@ class Convolution(Layer):
                     corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
                     output[n,i,:,:] = np.sum(corr, axis=1)
 
-        print("forward prop end")
-
         ## Compute output using activation function.
         output = RELU(output)
 
@@ -153,17 +151,12 @@ class Convolution(Layer):
         grad_biases = np.zeros(self.bias_size)
         grad_input = np.zeros(input_shape)
 
-        kernel_zeros = np.zeros(np.shape(grad_kernel))
-        input_zeros = np.zeros(np.shape(grad_input))
-
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
                     grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
                     grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
-
-        print("backpropagate end")
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)
