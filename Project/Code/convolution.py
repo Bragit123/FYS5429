@@ -4,6 +4,9 @@ from jax import random
 from funcs import RELU
 import numpy as np
 
+from typing import Callable
+from copy import copy
+
 from layer import Layer
 
 class Convolution(Layer):
@@ -39,7 +42,7 @@ class Convolution(Layer):
         - bias (ndarray): Array of shape bias_size containing all the biases.
 
     """
-    def __init__(self, input_size: tuple, kernel_size: tuple, seed: int = 100):
+    def __init__(self, input_size: tuple, kernel_size: tuple, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
         """
         Constructor
 
@@ -66,6 +69,10 @@ class Convolution(Layer):
         self.num_kernels = self.kernel_size[0]
         self.kernel_height = self.kernel_size[2]
         self.kernel_width = self.kernel_size[3]
+
+        self.act_func = act_func
+        self.scheduler_kernel = copy(scheduler)
+        self.scheduler_bias = copy(scheduler)
         
         ## Compute bias_size. This is equal to the output size.
         self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
@@ -114,7 +121,7 @@ class Convolution(Layer):
                     output[n,i,:,:] = np.sum(corr, axis=1)
 
         ## Compute output using activation function.
-        output = RELU(output)
+        output = self.act_func(output)
 
         return output
 
@@ -162,7 +169,7 @@ class Convolution(Layer):
         grad_biases = np.sum(dC_doutput, axis=0)
 
         ## Update the kernels and biases using gradient descent.
-        self.kernels -= grad_kernel * lmbd
-        self.bias -= grad_biases * lmbd
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
+        self.bias -= self.scheduler_bias.update_change(grad_biases)*lmbd 
 
         return grad_input
