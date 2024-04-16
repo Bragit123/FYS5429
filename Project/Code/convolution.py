@@ -4,6 +4,9 @@ from jax import random
 from funcs import RELU
 import numpy as np
 
+from typing import Callable
+from copy import copy
+
 from layer import Layer
 
 class Convolution(Layer):
@@ -39,7 +42,7 @@ class Convolution(Layer):
         - bias (ndarray): Array of shape bias_size containing all the biases.
 
     """
-    def __init__(self, input_size: tuple, kernel_size: tuple, seed: int = 100):
+    def __init__(self, input_size: tuple, kernel_size: tuple, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
         """
         Constructor
 
@@ -66,6 +69,10 @@ class Convolution(Layer):
         self.num_kernels = self.kernel_size[0]
         self.kernel_height = self.kernel_size[1]
         self.kernel_width = self.kernel_size[2]
+
+        self.act_func = act_func
+        self.scheduler_kernel = copy(scheduler)
+        self.scheduler_bias = copy(scheduler)
         
         ## Compute bias_size. This is equal to the output size.
         self.bias_size = (self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1, self.num_kernels)
@@ -117,9 +124,12 @@ class Convolution(Layer):
                     corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
                     output[n,:,:,i] = np.sum(corr, axis=1)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
         ## Compute output using activation function.
-        output = RELU(output)
+        output = self.act_func(output)
 
         return output
     
@@ -155,21 +165,23 @@ class Convolution(Layer):
         grad_biases = np.zeros(self.bias_size)
         grad_input = np.zeros(input_shape)
 
-        kernel_zeros = np.zeros(np.shape(grad_kernel))
-        input_zeros = np.zeros(np.shape(grad_input))
-
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
+<<<<<<< HEAD
                     grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], dC_doutput[n,:,:,i], "valid")
                     grad_input[n,:,:,d] += convolve2d(dC_doutput[n,:,:,i], self.kernels[i,:,:,d], "full")
+=======
+                    grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
+                    grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
+>>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)
 
         ## Update the kernels and biases using gradient descent.
-        self.kernels -= grad_kernel * lmbd
-        self.bias -= grad_biases * lmbd
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
+        self.bias -= self.scheduler_bias.update_change(grad_biases)*lmbd 
 
         return grad_input
