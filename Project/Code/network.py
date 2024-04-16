@@ -67,7 +67,6 @@ class Network:
         input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
-            print(f"EPOCH: {e+1} / {epochs}")
             print("EPOCH: " + str(e+1) + "/" + str(epochs))
             for b in range(batches):
                 if b == batches - 1:
@@ -85,12 +84,16 @@ class Network:
             train_output = self.feed_forward(input_train)
             train_predict = self.predict(input_train)
             train_error[e] = train_cost(train_predict)
-            train_accuracy[e] = np.mean(train_predict == target_train)
+            train_accuracy[e] = np.mean(np.all(train_predict == target_train, axis = 1))
+
+            #print(np.all(train_predict == target_train, axis = 1))
 
             if input_val is not None:
                 val_predict = self.predict(input_val)
                 val_error[e] = val_cost(val_predict)
-                val_accuracy[e] = np.mean(val_predict == target_val)
+                val_accuracy[e] = np.mean(np.all(val_predict == target_val, axis = 1))
+                #print(np.all(val_predict == target_val, axis = 1))
+                #print(val_accuracy[e])
                 val_output = self.feed_forward(input_val)
 
 

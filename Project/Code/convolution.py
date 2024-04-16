@@ -14,9 +14,9 @@ class Convolution(Layer):
     ## Attributes:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Input depth.
-            1: Number of rows.
-            2: Number of columns.
+            0: Number of rows.
+            1: Number of columns.
+            2: Input depth
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
@@ -46,15 +46,15 @@ class Convolution(Layer):
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Input depth.
-            1: Number of rows.
-            2: Number of columns.
+            0: Number of rows.
+            1: Number of columns.
+            2: Input depth
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
-            1: Kernel depth (same as input depth).
-            2: Number of kernel rows.
-            3: Number of kernel columns.
+            1: Number of kernel rows.
+            2: Number of kernel columns.
+            3: Kernel depth (same as input depth).
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
@@ -62,14 +62,13 @@ class Convolution(Layer):
         self.input_size = input_size
         self.kernel_size = kernel_size
         
-        self.input_depth, self.input_height, self.input_width = self.input_size
+        self.input_height, self.input_width, self.input_depth = self.input_size
         self.num_kernels = self.kernel_size[0]
-        self.kernel_height = self.kernel_size[2]
-        self.kernel_width = self.kernel_size[3]
+        self.kernel_height = self.kernel_size[1]
+        self.kernel_width = self.kernel_size[2]
         
         ## Compute bias_size. This is equal to the output size.
-        self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
-
+        self.bias_size = (self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1, self.num_kernels)
         ## Initialize kernels and biases.
 
     def reset_weights(self):
@@ -91,9 +90,9 @@ class Convolution(Layer):
             - input (ndarray): Four-dimensional input array to be fed forward through
             the neural network. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Input depth
         
         ## Returns:
             ndarray: Four-dimensional array containing the pooled output. This
@@ -113,10 +112,10 @@ class Convolution(Layer):
 
         for n in range(num_inputs):
             for i in range(self.num_kernels):
-                for c in range(self.input_depth):
+                for d in range(self.input_depth):
                     ## Correlate input with the kernels.
-                    corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
-                    output[n,i,:,:] = np.sum(corr, axis=1)
+                    corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
+                    output[n,:,:,i] = np.sum(corr, axis=1)
 
 
         ## Compute output using activation function.
@@ -138,9 +137,9 @@ class Convolution(Layer):
               partial derivatives of the cost function with respect to every
               output value from this layer. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Output depth.
             - lmbd (float): WILL BE CHANGED TO SCHEDULER.
         
         ## Returns
@@ -163,8 +162,8 @@ class Convolution(Layer):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
-                    grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
-                    grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
+                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], dC_doutput[n,:,:,i], "valid")
+                    grad_input[n,:,:,d] += convolve2d(dC_doutput[n,:,:,i], self.kernels[i,:,:,d], "full")
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)

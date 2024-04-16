@@ -30,7 +30,6 @@ class Network:
     def feed_forward(self, input: np.ndarray):
         layer_output = self.layers[0].feed_forward(input)
         for i in range(1, self.num_layers):
-            print(self.layers[i])
             layer_output = self.layers[i].feed_forward(layer_output)
 
         return layer_output

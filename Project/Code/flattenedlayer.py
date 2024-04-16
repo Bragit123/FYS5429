@@ -30,9 +30,9 @@ class FlattenedLayer(Layer):
             - input (ndarray): Four-dimensional input array to be fed forward through
             the neural network. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Input depth.
         
         ## Returns:
             ndarray: Two-dimensional array containing the flattened output. The
@@ -41,6 +41,7 @@ class FlattenedLayer(Layer):
         """
         self.num_inputs = input.shape[0]
         self.input_size = jnp.shape(input) # Save input shape for use in backpropagate().
+        print(self.input_size)
         length_flattened = self.input_shape[0]*self.input_shape[1]*self.input_shape[2]
 
         # Flattens the last three axes while keeping the first.
@@ -77,5 +78,7 @@ class FlattenedLayer(Layer):
             every input value to this layer.
         """
         input_size = (self.num_inputs, self.input_shape[0], self.input_shape[1], self.input_shape[2])
+        
         dC_dinput = jnp.reshape(dC_doutput, input_size)
+        print("input shape",dC_dinput.shape)
         return dC_dinput
