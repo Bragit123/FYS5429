@@ -4,6 +4,9 @@ from jax import random
 from funcs import RELU
 import numpy as np
 
+from typing import Callable
+from copy import copy
+
 from layer import Layer
 
 class Convolution(Layer):
@@ -14,9 +17,9 @@ class Convolution(Layer):
     ## Attributes:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Input depth.
-            1: Number of rows.
-            2: Number of columns.
+            0: Number of rows.
+            1: Number of columns.
+            2: Input depth
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
@@ -39,22 +42,22 @@ class Convolution(Layer):
         - bias (ndarray): Array of shape bias_size containing all the biases.
 
     """
-    def __init__(self, input_size: tuple, kernel_size: tuple, seed: int = 100):
+    def __init__(self, input_size: tuple, kernel_size: tuple, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
         """
         Constructor
 
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Input depth.
-            1: Number of rows.
-            2: Number of columns.
+            0: Number of rows.
+            1: Number of columns.
+            2: Input depth
         - kernel_size (tuple): Shape of kernels array containing four values, one
         for each dimension of the kernel. The four tuple values are
             0: Number of kernels.
-            1: Kernel depth (same as input depth).
-            2: Number of kernel rows.
-            3: Number of kernel columns.
+            1: Number of kernel rows.
+            2: Number of kernel columns.
+            3: Kernel depth (same as input depth).
         - seed (int): Seed for generating random initial weights and biases in
           the layer.
         """
@@ -62,14 +65,17 @@ class Convolution(Layer):
         self.input_size = input_size
         self.kernel_size = kernel_size
         
-        self.input_depth, self.input_height, self.input_width = self.input_size
+        self.input_height, self.input_width, self.input_depth = self.input_size
         self.num_kernels = self.kernel_size[0]
-        self.kernel_height = self.kernel_size[2]
-        self.kernel_width = self.kernel_size[3]
+        self.kernel_height = self.kernel_size[1]
+        self.kernel_width = self.kernel_size[2]
+
+        self.act_func = act_func
+        self.scheduler_kernel = copy(scheduler)
+        self.scheduler_bias = copy(scheduler)
         
         ## Compute bias_size. This is equal to the output size.
-        self.bias_size = (self.num_kernels, self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1)
-
+        self.bias_size = (self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1, self.num_kernels)
         ## Initialize kernels and biases.
 
     def reset_weights(self):
@@ -91,9 +97,9 @@ class Convolution(Layer):
             - input (ndarray): Four-dimensional input array to be fed forward through
             the neural network. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Input depth
         
         ## Returns:
             ndarray: Four-dimensional array containing the pooled output. This
@@ -106,18 +112,26 @@ class Convolution(Layer):
 
         ## Initialize output array.
         output = np.zeros(output_size)
+
+        # for i in range(0, self.input_height - self.kernel_height, 1): #can change 1 with stride possibly
+        #     for j in range(0, self.input_width - self.kernel_width, 1):
+        #         output[:, :, i, j] = jnp.sum(input[:, :, i : i + self.kernel_height, j : j + self.kernel_width] * self.kernels)
+
         for n in range(num_inputs):
             for i in range(self.num_kernels):
-                for c in range(self.input_depth):
+                for d in range(self.input_depth):
                     ## Correlate input with the kernels.
-                    corr = correlate2d(input[n,c,:,:], self.kernels[i,c,:,:], "valid") + self.bias[i,:,:]
-                    output[n,i,:,:] = np.sum(corr, axis=1)
+                    corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
+                    output[n,:,:,i] = np.sum(corr, axis=1)
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
         ## Compute output using activation function.
-        output = RELU(output)
+        output = self.act_func(output)
 
         return output
-
     
     def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
@@ -133,9 +147,9 @@ class Convolution(Layer):
               partial derivatives of the cost function with respect to every
               output value from this layer. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Output depth.
             - lmbd (float): WILL BE CHANGED TO SCHEDULER.
         
         ## Returns
@@ -155,14 +169,19 @@ class Convolution(Layer):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
+<<<<<<< HEAD
+                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], dC_doutput[n,:,:,i], "valid")
+                    grad_input[n,:,:,d] += convolve2d(dC_doutput[n,:,:,i], self.kernels[i,:,:,d], "full")
+=======
                     grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
                     grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
+>>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)
 
         ## Update the kernels and biases using gradient descent.
-        self.kernels -= grad_kernel * lmbd
-        self.bias -= grad_biases * lmbd
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
+        self.bias -= self.scheduler_bias.update_change(grad_biases)*lmbd 
 
         return grad_input

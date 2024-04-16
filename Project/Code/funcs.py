@@ -7,6 +7,7 @@ for automatic differentiation.
 """
 
 import jax.numpy as jnp
+import numpy as np
 from jax import grad
 
 def CostOLS(target):
@@ -48,9 +49,9 @@ def sigmoid(X):
 
 
 def softmax(X):
-    X = X - jnp.max(X, axis=-1, keepdims=True)
+    X = X - np.max(X, axis=-1, keepdims=True)
     delta = 10e-10
-    return jnp.exp(X) / (jnp.sum(jnp.exp(X), axis=-1, keepdims=True) + delta)
+    return np.exp(X) / (np.sum(np.exp(X), axis=-1, keepdims=True) + delta)
 
 
 def RELU(X):

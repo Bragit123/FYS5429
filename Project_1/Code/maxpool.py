@@ -13,9 +13,9 @@ class MaxPool(Layer):
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
             0: Number of inputs.
-            1: Number of rows.
-            2: Number of columns.
-            3: Input depth.
+            1: Input depth.
+            2: Number of rows.
+            3: Number of columns.
         - num_inputs (ndarray): Number of inputs.
         - input_depth (int): Depth of input.
         - input_height (int): Number of input rows.
@@ -29,9 +29,9 @@ class MaxPool(Layer):
         - output_size (tuple): Shape of output array containing four values, one
           for each dimension of the output. The four tuple values are
             0: Number of inputs.
-            1: Number of rows.
-            2: Number of columns.
-            3: Input depth.
+            1: Input depth.
+            2: Number of rows.
+            3: Number of columns.
         - max_ind (ndarray): Array of same shape as input. Used to keep track of
           where maximum values are retrieved from when pooling, in order to
           backpropagate.
@@ -44,9 +44,9 @@ class MaxPool(Layer):
         ## Parameters:
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
-            0: Number of rows.
-            1: Number of columns.
-            2: Input depth.
+            0: Input depth.
+            1: Number of rows.
+            2: Number of columns.
         - scale_factor (int): Number of rows and columns of the pooling window.
           This value is an integer, as we only consider square pooling windows
           (equal number of rows and columns).
@@ -56,7 +56,7 @@ class MaxPool(Layer):
         """
         super().__init__(seed)
         self.input_size = input_size
-        self.input_height, self.input_width, self.input_depth = self.input_size
+        self.input_depth, self.input_height, self.input_width = self.input_size
         self.scale_factor = scale_factor
         self.stride = stride
 
@@ -75,7 +75,7 @@ class MaxPool(Layer):
         return 0
     
     def find_output_shape(self):
-        return (self.output_height, self.output_width, self.input_depth)
+        return (self.input_depth, self.output_height, self.output_width)
 
 
     def feed_forward(self, input: jnp.ndarray) -> jnp.array:
@@ -86,9 +86,9 @@ class MaxPool(Layer):
             - input (ndarray): Four-dimensional input array to be fed forward through
             the neural network. The four axes are:
                 0: Different inputs.
-                1: Rows.
-                2: Columns.
-                3: Input depth.
+                1: Input depth.
+                2: Rows.
+                3: Columns.
         
         ## Returns:
             ndarray: Four-dimensional array containing the pooled output. This
@@ -100,7 +100,7 @@ class MaxPool(Layer):
         ## Initialize max_ind and output
         num_inputs = self.input.shape[0]
         self.max_ind_size = (num_inputs,) + self.input_size
-        self.output_size = (num_inputs, self.output_height, self.output_width, self.input_depth)
+        self.output_size = (num_inputs, self.input_depth, self.output_height, self.output_width)
         max_ind = np.zeros(self.max_ind_size)
         output = np.zeros(self.output_size)
 
@@ -111,18 +111,18 @@ class MaxPool(Layer):
             for j in range(self.output_width):
                 w_start = j*self.stride
                 w_end = w_start + self.scale_factor
-                input_hw = input[:, h_start:h_end, w_start:w_end,:]
+                input_hw = input[:,:, h_start:h_end, w_start:w_end]
 
                 ## Find maximum within pooling window, and update output array.
-                output_hw = np.max(input_hw, axis=(1,2))
-                output[:, i, j ,:] = output_hw
+                output_hw = np.max(input_hw, axis=(2,3))
+                output[:, :, i, j] = output_hw
 
                 ## Trace back where the maximum value(s) found place, and update max_ind accordingly.
-                compare = output_hw[:,np.newaxis,np.newaxis,:]
+                compare = output_hw[:,:,np.newaxis,np.newaxis]
                 max_ind_hw = np.where(compare == input_hw, 1, 0)
 
                 zero_matrix = np.zeros(self.max_ind_size)
-                max_ind[:, h_start:h_end, w_start:w_end,:] += max_ind_hw
+                max_ind[:, :, h_start:h_end, w_start:w_end] += max_ind_hw
 
         # The pooling window might find the same maximum more than one time,
         # depending on the choice of stride and scale_factor. Change every
@@ -144,9 +144,9 @@ class MaxPool(Layer):
               partial derivatives of the cost function with respect to every
               output value from this layer. The four axes are:
                 0: Different inputs.
-                1: Rows.
-                2: Columns.
-                3: Input depth.
+                1: Input depth.
+                2: Rows.
+                3: Columns.
             - lmbd (float): WILL BE CHANGED TO SCHEDULER.
         
         ## Returns
@@ -167,12 +167,12 @@ class MaxPool(Layer):
                 w_end = w_start + self.scale_factor
 
                 ## Find the gradient of the output corresponding to this pooling window.
-                dC_ij = dC_doutput[:,i,j,:]
+                dC_ij = dC_doutput[:,:,i,j]
 
                 ## Relate the output gradient value to the input values corresponding to the maximum in the pooling.
-                new_dC = dC_ij[:,np.newaxis,np.newaxis,:]
-                dC_hw = np.where(self.max_ind[:,h_start:h_end, w_start:w_end,:] == 1, new_dC, 0)
+                new_dC = dC_ij[:,:,np.newaxis,np.newaxis]
+                dC_hw = np.where(self.max_ind[:,:, h_start:h_end, w_start:w_end] == 1, new_dC, 0)
                 
-                grad_input[:, h_start:h_end, w_start:w_end,:] += dC_hw
+                grad_input[:, :, h_start:h_end, w_start:w_end] += dC_hw
                 
         return grad_input

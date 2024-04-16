@@ -12,9 +12,9 @@ class AveragePool(Layer):
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
             0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            1: Number of rows.
+            2: Number of columns.
+            3: Input depth.
         - num_inputs (ndarray): Number of inputs.
         - input_depth (int): Depth of input.
         - input_height (int): Number of input rows.
@@ -28,9 +28,9 @@ class AveragePool(Layer):
         - output_size (tuple): Shape of output array containing four values, one
           for each dimension of the output. The four tuple values are
             0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            1: Number of rows.
+            2: Number of columns.
+            3: Input depth.
     """
     def __init__(self, input_size: tuple, scale_factor: int, stride: int, seed: int = 100):
         """
@@ -40,9 +40,9 @@ class AveragePool(Layer):
         - input_size (tuple): Shape of input array containing four values, one
         for each dimension of input. The four tuple values are
             0: Number of inputs.
-            1: Input depth.
-            2: Number of rows.
-            3: Number of columns.
+            1: Number of rows.
+            2: Number of columns.
+            3: Input depth.
         - scale_factor (int): Number of rows and columns of the pooling window.
           This value is an integer, as we only consider square pooling windows
           (equal number of rows and columns).
@@ -52,7 +52,7 @@ class AveragePool(Layer):
         """
         super().__init__(seed)
         self.input_size = input_size
-        self.input_depth, self.input_height, self.input_width = self.input_size
+        self.input_height, self.input_width, self.input_depth = self.input_size
         self.scale_factor = scale_factor
         self.stride = stride
 
@@ -72,7 +72,7 @@ class AveragePool(Layer):
         return 0
     
     def find_output_shape(self):
-        return (self.input_depth, self.output_height, self.output_width)
+        return (self.output_height, self.output_width, self.input_depth)
 
     def feed_forward(self, input: jnp.ndarray):
         """
@@ -82,9 +82,9 @@ class AveragePool(Layer):
             - input (ndarray): Four-dimensional input array to be fed forward through
             the neural network. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Input depth.
         
         ## Returns:
             ndarray: Four-dimensional array containing the pooled output. This
@@ -94,7 +94,7 @@ class AveragePool(Layer):
         self.input = input
         ## Initialize output
         num_inputs = self.input.shape[0]
-        self.output_size = (num_inputs, self.input_depth, self.output_height, self.output_width)
+        self.output_size = (num_inputs, self.output_height, self.output_width,  self.input_depth)
         output = np.zeros(self.output_size)
 
         for i in range(self.output_height):
@@ -104,11 +104,11 @@ class AveragePool(Layer):
             for j in range(self.output_width):
                 w_start = j*self.stride
                 w_end = w_start + self.scale_factor
-                input_hw = input[:,:, h_start:h_end, w_start:w_end]
+                input_hw = input[:, h_start:h_end, w_start:w_end, :]
 
                 ## Find average within pooling window, and update output array.
                 output_hw = np.average(input_hw, axis=(2,3))
-                output[:,:,i,j] = output_hw 
+                output[:,i,j,:] = output_hw 
         return output
 
     def backpropagate(self, dC_doutput: jnp.ndarray, lmbd: float = 0.01):
@@ -123,9 +123,9 @@ class AveragePool(Layer):
               partial derivatives of the cost function with respect to every
               output value from this layer. The four axes are:
                 0: Different inputs.
-                1: Input depth.
-                2: Rows.
-                3: Columns.
+                1: Rows.
+                2: Columns.
+                3: Input depth.
             - lmbd (float): WILL BE CHANGED TO SCHEDULER.
         
         ## Returns
@@ -145,10 +145,10 @@ class AveragePool(Layer):
                 w_start = j*self.stride
                 w_end = w_start + self.scale_factor
                 ## Find the gradient of the output corresponding to this pooling window and scale them.
-                dC_ij = dC_output_scaled[:,:,i,j]
+                dC_ij = dC_output_scaled[:,i,j,:]
                 ## Update the new gradient
-                new_dC = dC_ij[:,:,np.newaxis,np.newaxis]
-                grad_input[:,:,w_start:w_end, h_start:h_end] += new_dC # Plus, to account for multiple contributions
+                new_dC = dC_ij[:,np.newaxis,np.newaxis,:]
+                grad_input[:,w_start:w_end, h_start:h_end,:] += new_dC # Plus, to account for multiple contributions
         
         return grad_input
 

@@ -8,6 +8,9 @@ from averagepool import AveragePool
 from flattenedlayer import FlattenedLayer
 from fullyconnected import FullyConnected
 
+from funcs import RELU, sigmoid, derivate
+from copy import copy 
+
 class Network:
     def __init__(self, cost_func, input_shape: tuple | int, seed: int = 100):
         self.seed = seed
@@ -67,7 +70,6 @@ class Network:
         input_train, target_train = resample(input_train, target_train, replace=False)
 
         for e in range(epochs):
-            print(f"EPOCH: {e+1} / {epochs}")
             print("EPOCH: " + str(e+1) + "/" + str(epochs))
             for b in range(batches):
                 if b == batches - 1:
@@ -85,12 +87,16 @@ class Network:
             train_output = self.feed_forward(input_train)
             train_predict = self.predict(input_train)
             train_error[e] = train_cost(train_predict)
-            train_accuracy[e] = np.mean(train_predict == target_train)
+            train_accuracy[e] = np.mean(np.all(train_predict == target_train, axis = 1))
+
+            #print(np.all(train_predict == target_train, axis = 1))
 
             if input_val is not None:
                 val_predict = self.predict(input_val)
                 val_error[e] = val_cost(val_predict)
-                val_accuracy[e] = np.mean(val_predict == target_val)
+                val_accuracy[e] = np.mean(np.all(val_predict == target_val, axis = 1))
+                #print(np.all(val_predict == target_val, axis = 1))
+                #print(val_accuracy[e])
                 val_output = self.feed_forward(input_val)
 
 
@@ -119,10 +125,10 @@ class Network:
         return input_shape
 
     ## Methods for adding layers
-    def add_Convolution_layer(self, kernel_size: tuple):
+    def add_Convolution_layer(self, kernel_size: tuple, act_func, scheduler):
         input_shape = self.next_layer_input_shape()
-        cnn_layer = Convolution(input_shape, kernel_size, self.seed)
-        
+        cnn_layer = Convolution(input_shape, kernel_size, act_func, copy(scheduler), self.seed)
+
         self.layers.append(cnn_layer)
         self.num_layers += 1
     
