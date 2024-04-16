@@ -8,6 +8,9 @@ from averagepool import AveragePool
 from flattenedlayer import FlattenedLayer
 from fullyconnected import FullyConnected
 
+from funcs import RELU, sigmoid, derivate
+from copy import copy 
+
 class Network:
     def __init__(self, cost_func, input_shape: tuple | int, seed: int = 100):
         self.seed = seed
@@ -119,10 +122,10 @@ class Network:
         return input_shape
 
     ## Methods for adding layers
-    def add_Convolution_layer(self, kernel_size: tuple):
+    def add_Convolution_layer(self, kernel_size: tuple, act_func, scheduler):
         input_shape = self.next_layer_input_shape()
-        cnn_layer = Convolution(input_shape, kernel_size, self.seed)
-        
+        cnn_layer = Convolution(input_shape, kernel_size, act_func, copy(scheduler), self.seed)
+
         self.layers.append(cnn_layer)
         self.num_layers += 1
     
