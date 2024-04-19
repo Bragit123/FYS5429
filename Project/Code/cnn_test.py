@@ -16,10 +16,10 @@ digits = datasets.mnist.load_data(path="mnist.npz")
 (x_train, y_train), (x_test, y_test) = digits #The data contains a test and a train set
 
 x_train, x_test = x_train/255.0, x_test/255.0 #Normalising the pixel values to be in [0,1]
-x_train = x_train[:][:][0:int(0.01*len(x_train[:][:]))] #The data contains 60000 samples, 6000 should be enough for our purpose
-x_test = x_test[:][:][0:int(0.01*len(x_test[:][:]))]
-y_train = y_train[0:int(0.01*len(y_train))]
-y_test = y_test[0:int(0.01*len(y_test))]
+x_train = x_train[:][:][0:int(0.1*len(x_train[:][:]))] #The data contains 60000 samples, 6000 should be enough for our purpose
+x_test = x_test[:][:][0:int(0.1*len(x_test[:][:]))]
+y_train = y_train[0:int(0.1*len(y_train))]
+y_test = y_test[0:int(0.1*len(y_test))]
 print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 #Greyscale images should have depth 1
 x_train = x_train[:,:,:,np.newaxis]
@@ -72,7 +72,7 @@ epochs = 50
 batches = 10
 eta0 = -2; eta1 = -1; n_eta = eta1-eta0+1
 lam0 = -5; lam1 = -3; n_lam = lam1-lam0+1
-etas = np.logspace(eta0, eta1, n_eta)
+etas = np.logspace(-3, -2, 3)
 lmds = np.logspace(lam0, lam1, n_lam)
 
 train_accs = np.zeros((3,3))
@@ -121,6 +121,14 @@ for i in range(len(etas)):
         epoch_arr = np.arange(epochs)
         train_accs[i,j] = scores["train_accuracy"][-1]
         val_accs[i,j] = scores["val_accuracy"][-1]
+        plt.figure()
+        plt.title("Accuracies")
+        plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
+        plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy")
+        plt.legend()
+        plt.savefig("cnn_accuracy.pdf")
 
     
 title = "Accuracies train"
