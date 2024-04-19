@@ -59,7 +59,7 @@ network = Network(cost_func, input_size)
 # network.add_layer(fc)
 # network.add_layer(out)
 
-network.add_Convolution_layer(kernel_size)
+network.add_Convolution_layer(kernel_size, act_func, scheduler)
 network.add_MaxPool_layer(scale_factor, stride)
 #network.add_Convolution_layer(kernel_size)
 #network.add_MaxPool_layer(scale_factor, stride)
@@ -103,13 +103,15 @@ for i in range(len(etas)):
         # network.add_layer(fc)
         # network.add_layer(out)
 
-        network.add_Convolution_layer(kernel_size)
+        network.add_Convolution_layer(kernel_size, act_func, copy(scheduler))
         network.add_MaxPool_layer(scale_factor, stride)
         #network.add_Convolution_layer(kernel_size)
         #network.add_MaxPool_layer(scale_factor, stride)
         network.add_Flattened_layer()
         network.add_FullyConnected_layer(20, act_func, copy(scheduler))
         network.add_FullyConnected_layer(10, act_func, copy(scheduler))
+
+
 
         # pred = network.feed_forward(X)
         # print(pred)
@@ -121,6 +123,16 @@ for i in range(len(etas)):
         train_accs[i,j] = scores["train_accuracy"][-1]
         val_accs[i,j] = scores["val_accuracy"][-1]
 
+        epoch_arr = np.arange(epochs)
+        plt.figure()
+        plt.title("Accuracies")
+        plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
+        plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy")
+        plt.legend()
+        plt.savefig("cnn_accuracy.pdf")
+
     
 title = "Accuracies train"
 filename = "heatmap_train_cnn.pdf"
@@ -130,12 +142,4 @@ filename = "heatmap_val_cnn.pdf"
 heatmap(data=val_accs, xticks=lmds, yticks=etas, title=title, xlabel="$\\lambda$", ylabel="$\\eta$", filename=filename)
 
 
-epoch_arr = np.arange(epochs)
-# plt.figure()
-# plt.title("Accuracies")
-# plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
-# plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
-# plt.xlabel("Epoch")
-# plt.ylabel("Accuracy")
-# plt.legend()
-# plt.savefig("cnn_accuracy.pdf")
+
