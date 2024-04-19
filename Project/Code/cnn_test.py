@@ -42,6 +42,7 @@ fc_size = 4*4
 
 cost_func = CostLogReg
 act_func = sigmoid
+output_act = softmax
 scheduler = Adam(0.1, 0.9, 0.999)
 
 # Layers
@@ -59,13 +60,13 @@ network = Network(cost_func, input_size)
 # network.add_layer(fc)
 # network.add_layer(out)
 
-network.add_Convolution_layer(kernel_size)
+network.add_Convolution_layer(kernel_size, act_func, copy(scheduler))
 network.add_MaxPool_layer(scale_factor, stride)
 #network.add_Convolution_layer(kernel_size)
 #network.add_MaxPool_layer(scale_factor, stride)
 network.add_Flattened_layer()
 network.add_FullyConnected_layer(50, act_func, copy(scheduler))
-network.add_FullyConnected_layer(10, act_func, copy(scheduler))
+network.add_FullyConnected_layer(10, output_act, copy(scheduler))
 
 epochs = 50
 batches = 10
@@ -103,7 +104,7 @@ for i in range(len(etas)):
         # network.add_layer(fc)
         # network.add_layer(out)
 
-        network.add_Convolution_layer(kernel_size)
+        network.add_Convolution_layer(kernel_size, act_func, copy(scheduler))
         network.add_MaxPool_layer(scale_factor, stride)
         #network.add_Convolution_layer(kernel_size)
         #network.add_MaxPool_layer(scale_factor, stride)

@@ -124,10 +124,6 @@ class Convolution(Layer):
                     corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
                     output[n,:,:,i] = np.sum(corr, axis=1)
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
         ## Compute output using activation function.
         output = self.act_func(output)
 
@@ -169,13 +165,8 @@ class Convolution(Layer):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
-<<<<<<< HEAD
                     grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], dC_doutput[n,:,:,i], "valid")
                     grad_input[n,:,:,d] += convolve2d(dC_doutput[n,:,:,i], self.kernels[i,:,:,d], "full")
-=======
-                    grad_kernel[i,d,:,:] += correlate2d(input[n,d,:,:], dC_doutput[n,i,:,:], "valid")
-                    grad_input[n,d,:,:] += convolve2d(dC_doutput[n,i,:,:], self.kernels[d,i,:,:], "full")
->>>>>>> 4e5fc89483fa5b7cd29e7252a2b0d1ec45ee5529
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(dC_doutput, axis=0)

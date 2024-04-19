@@ -52,6 +52,17 @@ def softmax(X):
     X = X - np.max(X, axis=-1, keepdims=True)
     delta = 10e-10
     return np.exp(X) / (np.sum(np.exp(X), axis=-1, keepdims=True) + delta)
+# def softmax(X, X_sum):
+#     X = X - np.max(X, axis=-1, keepdims=True)
+#     delta = 10e-10
+#     return np.exp(X) / X_sum
+
+def grad_softmax(X):
+    f = softmax(X)
+    #f @ f
+    #f[i]*(i==j) - f[i]*f[j]
+    return f - f**2
+    
 
 
 def RELU(X):
