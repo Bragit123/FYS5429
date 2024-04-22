@@ -30,7 +30,7 @@ cost_func = CostLogReg
 rho = 0.9
 rho2 = 0.999
 momentum = 0.01
-batches = 10
+batches = 1
 epochs = 100
 
 # Layers
@@ -52,12 +52,12 @@ val_accs = np.zeros((4,5))
 rho = 0.9
 rho2 = 0.999
 momentum = 0.01
-batches = 10
+batches = 1
 epochs = 50
 
 for i in range(len(etas)):
     for j in range(len(lmds)):
-        #scheduler = AdamMomentum(eta, 0.9, 0.999, 0.01) #temporary
+        #scheduler = AdamMomentum(etas[i], 0.9, 0.999, 0.01) #temporary
         scheduler = Adam(etas[i], rho, rho2) #temporary
         #scheduler = AdagradMomentum(0.01, 0.001) #temporary
         #scheduler = Constant(0.1) #temporary
@@ -86,7 +86,7 @@ for i in range(len(etas)):
         train_accs[i,j] = scores["train_accuracy"][-1]
         val_accs[i,j] = scores["val_accuracy"][-1]
 
-        if i== 2 and j == 0:  #Best accuracy
+        if i== 3 and j == 0:  #Best accuracy
             plt.figure()
             plt.title("Accuracies")
             plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
@@ -94,11 +94,11 @@ for i in range(len(etas)):
             plt.xlabel("Epoch")
             plt.ylabel("Accuracy")
             plt.legend()
-            plt.savefig("accuracy.pdf")
+            plt.savefig("accuracy_1_batch.pdf")
 
 title = "Accuracies train"
-filename = "heatmap_train.pdf"
+filename = "heatmap_train_1_batch.pdf"
 plotting.heatmap(data=train_accs, xticks=lmds, yticks=etas, title=title, xlabel="$\\lambda$", ylabel="$\\eta$", filename=filename)
 title = "Accuracies validation"
-filename = "heatmap_val.pdf"
+filename = "heatmap_val_1_batch.pdf"
 plotting.heatmap(data=val_accs, xticks=lmds, yticks=etas, title=title, xlabel="$\\lambda$", ylabel="$\\eta$", filename=filename)

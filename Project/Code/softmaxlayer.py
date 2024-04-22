@@ -1,68 +1,12 @@
-
-import matplotlib.pyplot as plt
-from jax import vmap, grad
 import numpy as np
-from funcs import RELU, sigmoid, derivate, grad_softmax
-from typing import Callable
-from copy import copy
+from fullyconnected import FullyConnected
+from funcs import sigmoid, softmax
 
-from layer import Layer
-
-
-class FullyConnected(Layer):
-    """
-    Fully connected layer. Defines a number of output nodes, and computes a
-    weighted sum of the input for each output, and runs the resulting value
-    through an activation function.
-
-    ## Attributes:
-        - input_length (int): Number of inputs. This corresponds to the
-          number of nodes in the previous layer of the neural network.
-        - output_length (int): Number of outputs to produce from the layer.
-        - weights_size (tuple): Shape of weights array.
-        - bias_length (int): Number of biases.
-        - weights (ndarray): Two-dimensional array of shape weights_size. With
-          one row for each input value, and one column for each output value of
-          the layer.
-        - bias (ndarray): One-dimensional array containing the biases, with one
-          bias for each output value of the layer.
-    """
-    def __init__(self, input_length: int, output_length: int, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
-        """
-        Constructor
-
-        ## Parameters:
-        - input_length (int): Number of inputs. This corresponds to the
-          number of nodes in the previous layer of the neural network.
-        - output_length (int): Number of outputs to produce from the layer.
-        - seed (int): Seed for generating random initial weights and biases in
-          the layer.
-        """
-        super().__init__(seed)
-        self.input_length = input_length
-        self.output_length = output_length
-        self.weights_size = (self.input_length, self.output_length)
-        self.bias_length = self.output_length
-        self.act_func = act_func
-        
-        self.scheduler_weights = copy(scheduler)
-        self.scheduler_bias = copy(scheduler)
-
-        ## Initialize random weights and biases.
-        self.reset_weights()
-
-    def reset_weights(self):
-        np.random.seed(self.seed)
-        self.weights = np.random.normal(size=self.weights_size)
-        self.bias = np.random.normal(size=(1, self.bias_length))*0.01
+class SoftmaxLayer(FullyConnected):
+    def __init__(self, input_length: int, output_length: int, scheduler, seed: int = 100):
+        super().__init__(input_length, output_length, sigmoid, scheduler, seed)
+        self.sigmoid_output = None
     
-    def reset_schedulers(self):
-        self.scheduler_weights.reset()
-        self.scheduler_bias.reset()
-    
-    def find_output_shape(self) -> tuple | int:
-        return self.output_length
-
     def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
@@ -81,7 +25,8 @@ class FullyConnected(Layer):
         self.z = input @ self.weights + self.bias
 
         # calculate a, add bias
-        output = self.act_func(self.z)
+        self.sigmoid_output = sigmoid(self.z)
+        output = softmax(self.z)
 
         return output
 
@@ -106,25 +51,10 @@ class FullyConnected(Layer):
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        #self.grad_weights = 0
-        input = self.input
-        if self.act_func.__name__ == "softmax":
-            #grad_act = vmap(vmap(derivate(self.act_func)))
-            #z_sum = np.sum()
-            #delta_matrix = dC_doutput * grad_act(self.z, z_sum)
-            #z_sum = np.sum(z, axis=1)
-            grad_act = grad_softmax(self.z)
-        else:
-            grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
-        input_size = np.shape(input)
-
-        ## Initialize weights and biases.
-        #grad_weights = np.zeros(self.weights_size)
-        #grad_biases = np.zeros(np.shape(self.bias))
-        #grad_input = np.zeros(input_size)
+        
 
         #dC_da = dC_doutput * grad_act(self.z)
-        delta_matrix = dC_doutput * grad_act#(self.z)
+        delta_matrix = dC_doutput * grad_act(self.z)
         grad_weights = input.T @ delta_matrix/input_size[0]
         grad_biases = np.sum(delta_matrix, axis=0).reshape(1, np.shape(delta_matrix)[1])/input_size[0]
         grad_input = delta_matrix @ self.weights.T

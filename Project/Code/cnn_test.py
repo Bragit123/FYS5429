@@ -41,7 +41,8 @@ scale_factor = 2; stride = 2
 fc_size = 4*4
 
 cost_func = CostLogReg
-act_func = sigmoid
+act_func = RELU
+output_act = softmax
 scheduler = Adam(0.1, 0.9, 0.999)
 
 # Layers
@@ -59,13 +60,15 @@ network = Network(cost_func, input_size)
 # network.add_layer(fc)
 # network.add_layer(out)
 
+
 network.add_Convolution_layer(kernel_size, act_func, scheduler)
+
 network.add_MaxPool_layer(scale_factor, stride)
 #network.add_Convolution_layer(kernel_size)
 #network.add_MaxPool_layer(scale_factor, stride)
 network.add_Flattened_layer()
 network.add_FullyConnected_layer(50, act_func, copy(scheduler))
-network.add_FullyConnected_layer(10, act_func, copy(scheduler))
+network.add_FullyConnected_layer(10, output_act, copy(scheduler))
 
 epochs = 50
 batches = 10
@@ -112,7 +115,6 @@ for i in range(len(etas)):
         network.add_FullyConnected_layer(10, act_func, copy(scheduler))
 
 
-
         # pred = network.feed_forward(X)
         # print(pred)
         # Train network
@@ -124,14 +126,15 @@ for i in range(len(etas)):
         val_accs[i,j] = scores["val_accuracy"][-1]
 
         epoch_arr = np.arange(epochs)
-        plt.figure()
-        plt.title("Accuracies")
-        plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
-        plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
-        plt.xlabel("Epoch")
-        plt.ylabel("Accuracy")
-        plt.legend()
-        plt.savefig("cnn_accuracy.pdf")
+        if (i==0 and j==0):
+            plt.figure()
+            plt.title("Accuracies")
+            plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
+            plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+            plt.xlabel("Epoch")
+            plt.ylabel("Accuracy")
+            plt.legend()
+            plt.savefig("cnn_accuracy.pdf")
 
     
 title = "Accuracies train"

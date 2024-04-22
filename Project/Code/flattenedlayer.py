@@ -41,7 +41,7 @@ class FlattenedLayer(Layer):
         """
         self.num_inputs = input.shape[0]
         self.input_size = jnp.shape(input) # Save input shape for use in backpropagate().
-        print(self.input_size)
+        #print(self.input_size)
         length_flattened = self.input_shape[0]*self.input_shape[1]*self.input_shape[2]
 
         # Flattens the last three axes while keeping the first.
@@ -80,5 +80,5 @@ class FlattenedLayer(Layer):
         input_size = (self.num_inputs, self.input_shape[0], self.input_shape[1], self.input_shape[2])
         
         dC_dinput = jnp.reshape(dC_doutput, input_size)
-        print("input shape",dC_dinput.shape)
+        #print("input shape",dC_dinput.shape)
         return dC_dinput
