@@ -8,7 +8,7 @@ from fullyconnected import FullyConnected
 from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from scheduler import Adam
-from funcs import CostLogReg, sigmoid, RELU, softmax
+from funcs import CostLogReg, sigmoid, LRELU, softmax
 from copy import copy
 from plotting import * #Various plotting functions, we will use heatmap
 
@@ -16,10 +16,10 @@ digits = datasets.mnist.load_data(path="mnist.npz")
 (x_train, y_train), (x_test, y_test) = digits #The data contains a test and a train set
 
 x_train, x_test = x_train/255.0, x_test/255.0 #Normalising the pixel values to be in [0,1]
-x_train = x_train[:][:][0:int(0.1*len(x_train[:][:]))] #The data contains 60000 samples, 6000 should be enough for our purpose
-x_test = x_test[:][:][0:int(0.1*len(x_test[:][:]))]
-y_train = y_train[0:int(0.1*len(y_train))]
-y_test = y_test[0:int(0.1*len(y_test))]
+x_train = x_train[:][:][0:int(0.01*len(x_train[:][:]))] #The data contains 60000 samples, 6000 should be enough for our purpose
+x_test = x_test[:][:][0:int(0.01*len(x_test[:][:]))]
+y_train = y_train[0:int(0.01*len(y_train))]
+y_test = y_test[0:int(0.01*len(y_test))]
 print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 #Greyscale images should have depth 1
 x_train = x_train[:,:,:,np.newaxis]
@@ -69,14 +69,14 @@ network.add_FullyConnected_layer(50, act_func, copy(scheduler))
 network.add_FullyConnected_layer(10, output_act, copy(scheduler))
 
 epochs = 50
-batches = 10
-eta0 = -2; eta1 = -1; n_eta = eta1-eta0+1
-lam0 = -5; lam1 = -3; n_lam = lam1-lam0+1
-etas = np.logspace(-3, -2, 3)
+batches = 15
+eta0 = -3; eta1 = 0; n_eta = eta1-eta0+1
+lam0 = -3; lam1 = -2; n_lam = lam1-lam0+1
+etas = np.logspace(eta0, eta1, n_eta)
 lmds = np.logspace(lam0, lam1, n_lam)
 
-train_accs = np.zeros((3,3))
-val_accs = np.zeros((3,3))
+train_accs = np.zeros((n_eta, n_lam))
+val_accs = np.zeros((n_eta, n_lam))
 
 rho = 0.9
 rho2 = 0.999

@@ -40,7 +40,12 @@ class Network:
 
     def predict(self, input: np.ndarray):
         output = self.feed_forward(input)
-        predicted = np.where(output > 0.5, 1, 0)
+        predicted = np.zeros_like(output)
+        ind_1_axis = np.argmax(output,axis=1)
+
+        #or i in range(predicted.shape[0]):
+        ind_0_axis = np.arange(predicted.shape[0])
+        predicted[ind_0_axis, ind_1_axis] = 1
         return predicted
 
     def backpropagate(self, output, target, lmbd = 0.1):
