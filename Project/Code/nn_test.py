@@ -7,6 +7,8 @@ from scheduler import *
 from copy import copy
 import plotting
 
+# from tensorflow.keras import to_categorical
+from tensorflow.keras.utils import to_categorical
 from sklearn import datasets
 from sklearn.preprocessing import minmax_scale
 from sklearn.model_selection import train_test_split
@@ -18,12 +20,15 @@ X = cancer.data
 t = cancer.target
 t = np.c_[t]
 
+t = to_categorical(t)
+
 X = minmax_scale(X, feature_range=(0,1), axis=0)
 
 X_train, X_val, t_train, t_val = train_test_split(X, t, test_size=0.2, random_state=100)
 
 # Set values for neural network
 act_func = sigmoid
+output_act = softmax
 cost_func = CostLogReg
 
 # Set constants
@@ -74,7 +79,7 @@ for i in range(len(etas)):
         # network.add_layer(input_layer)
         # network.add_layer(output_layer)
         network.add_FullyConnected_layer(n_nodes_hidden, act_func, copy(scheduler))
-        network.add_FullyConnected_layer(t_shape[1], act_func, copy(scheduler))
+        network.add_FullyConnected_layer(t_shape[1], output_act, copy(scheduler))
 
         # pred = network.feed_forward(X)
         # print(pred)

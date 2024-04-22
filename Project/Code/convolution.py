@@ -169,7 +169,8 @@ class Convolution(Layer):
                     grad_input[n,:,:,d] += convolve2d(dC_doutput[n,:,:,i], self.kernels[i,:,:,d], "full")
 
         ## Compute the gradient with respect to biases.
-        grad_biases = np.sum(dC_doutput, axis=0)
+        grad_biases = np.sum(dC_doutput, axis=0)#/input_shape[0]
+        #grad_kernel /= input_shape[0]
 
         ## Update the kernels and biases using gradient descent.
         self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd

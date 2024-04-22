@@ -72,7 +72,7 @@ network.add_FullyConnected_layer(10, output_act, copy(scheduler))
 
 epochs = 50
 batches = 10
-eta0 = -2; eta1 = -1; n_eta = eta1-eta0+1
+eta0 = -3; eta1 = -1; n_eta = eta1-eta0+1
 lam0 = -5; lam1 = -3; n_lam = lam1-lam0+1
 etas = np.logspace(eta0, eta1, n_eta)
 lmds = np.logspace(lam0, lam1, n_lam)
@@ -124,6 +124,14 @@ for i in range(len(etas)):
         epoch_arr = np.arange(epochs)
         train_accs[i,j] = scores["train_accuracy"][-1]
         val_accs[i,j] = scores["val_accuracy"][-1]
+        plt.figure()
+        plt.title("Accuracies")
+        plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
+        plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy")
+        plt.legend()
+        plt.savefig("cnn_accuracy.pdf")
 
         epoch_arr = np.arange(epochs)
         if (i==0 and j==0):
