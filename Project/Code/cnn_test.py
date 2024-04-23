@@ -8,7 +8,7 @@ from fullyconnected import FullyConnected
 from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from scheduler import Adam
-from funcs import CostLogReg, sigmoid, RELU, softmax
+from funcs import CostLogReg, sigmoid, LRELU, softmax
 from copy import copy
 from plotting import * #Various plotting functions, we will use heatmap
 
@@ -41,7 +41,7 @@ scale_factor = 2; stride = 2
 fc_size = 4*4
 
 cost_func = CostLogReg
-act_func = RELU
+act_func = sigmoid
 output_act = softmax
 scheduler = Adam(0.1, 0.9, 0.999)
 
@@ -77,8 +77,8 @@ lam0 = -5; lam1 = -3; n_lam = lam1-lam0+1
 etas = np.logspace(eta0, eta1, n_eta)
 lmds = np.logspace(lam0, lam1, n_lam)
 
-train_accs = np.zeros((3,3))
-val_accs = np.zeros((3,3))
+train_accs = np.zeros((n_eta, n_lam))
+val_accs = np.zeros((n_eta, n_lam))
 
 rho = 0.9
 rho2 = 0.999
