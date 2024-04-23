@@ -33,7 +33,7 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 
 # Parameters
 input_size = x_train.shape[1:]
-kernel_size = (1, 3, 3, 1)
+kernel_size = (2, 3, 3, 1)
 pool_input_size = (1, 28-3+1, 28-3+1)
 input_size2 = (1, 13, 13)
 pool_input_size2 = (1, 9, 9)

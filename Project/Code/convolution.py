@@ -42,7 +42,7 @@ class Convolution(Layer):
         - bias (ndarray): Array of shape bias_size containing all the biases.
 
     """
-    def __init__(self, input_size: tuple, kernel_size: tuple, act_func: Callable[[np.ndarray],np.ndarray], scheduler, seed: int = 100):
+    def __init__(self, input_size: tuple, kernel_size: tuple, act_func: Callable[[np.ndarray],np.ndarray], scheduler, stride = 1, seed: int = 100):
         """
         Constructor
 
@@ -73,6 +73,8 @@ class Convolution(Layer):
         self.act_func = act_func
         self.scheduler_kernel = copy(scheduler)
         self.scheduler_bias = copy(scheduler)
+
+        self.stride = stride
         
         self.z = None
         ## Compute bias_size. This is equal to the output size.
@@ -114,16 +116,17 @@ class Convolution(Layer):
         ## Initialize output array.
         z = np.zeros(output_size)
 
-        # for i in range(0, self.input_height - self.kernel_height, 1): #can change 1 with stride possibly
-        #     for j in range(0, self.input_width - self.kernel_width, 1):
-        #         output[:, :, i, j] = jnp.sum(input[:, :, i : i + self.kernel_height, j : j + self.kernel_width] * self.kernels)
+        for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
+            for j in range(0, self.input_width - self.kernel_width, self.stride):
+                for d in range(self.num_kernels):
+                    z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
 
-        for n in range(num_inputs):
-            for i in range(self.num_kernels):
-                for d in range(self.input_depth):
+        #for n in range(num_inputs):
+            #for i in range(self.num_kernels):
+                #for d in range(self.input_depth):
                     ## Correlate input with the kernels.
-                    corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
-                    z[n,:,:,i] = np.sum(corr, axis=1)
+                    #corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
+                    #z[n,:,:,i] = np.sum(corr, axis=1)
 
         ## Compute output using activation function.
         self.z = z
@@ -166,6 +169,13 @@ class Convolution(Layer):
         grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
         # grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
         delta_matrix = dC_doutput * grad_act
+
+        #for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
+         #   for j in range(0, self.input_width - self.kernel_width, self.stride):
+          #      for d in range(self.num_kernels):
+           #         z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+
+
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):

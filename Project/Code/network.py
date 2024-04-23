@@ -130,9 +130,9 @@ class Network:
         return input_shape
 
     ## Methods for adding layers
-    def add_Convolution_layer(self, kernel_size: tuple, act_func, scheduler):
+    def add_Convolution_layer(self, kernel_size: tuple, act_func, scheduler, stride = 1):
         input_shape = self.next_layer_input_shape()
-        cnn_layer = Convolution(input_shape, kernel_size, act_func, copy(scheduler), self.seed)
+        cnn_layer = Convolution(input_shape, kernel_size, act_func, copy(scheduler), stride, self.seed)
 
         self.layers.append(cnn_layer)
         self.num_layers += 1
