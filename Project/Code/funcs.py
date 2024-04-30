@@ -37,6 +37,13 @@ def CostCrossEntropy(target):
 
     return func
 
+# def CategoricalCrossEntropy(target):
+
+#     def func(X):
+#         return -jnp.sum(target * jnp.log(X + 10e-10))
+
+#     return func
+
 def identity(X):
     return X
 
@@ -92,3 +99,10 @@ def derivate(func):
 
     else:
         return grad(func)
+
+
+def padding(X, p = 1):
+    num_inputs, height, width, depth = X.shape
+    padded_image = np.zeros((num_inputs, height + 2*p, width + 2*p, depth)) #X has 4 dimensions
+    padded_image[:,p:-1-p+1,p:-1-p+1,:] = X
+    return padded_image

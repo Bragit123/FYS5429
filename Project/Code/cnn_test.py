@@ -8,7 +8,7 @@ from fullyconnected import FullyConnected
 from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
 from scheduler import Adam
-from funcs import CostLogReg, sigmoid, LRELU, softmax
+from funcs import *
 from copy import copy
 from plotting import * #Various plotting functions, we will use heatmap
 
@@ -25,6 +25,9 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 x_train = x_train[:,:,:,np.newaxis]
 x_test = x_test[:,:,:,np.newaxis]
 
+x_train = padding(x_train)
+x_test = padding(x_test)
+
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
@@ -33,32 +36,17 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 
 # Parameters
 input_size = x_train.shape[1:]
-kernel_size = (2, 3, 3, 1)
-pool_input_size = (1, 28-3+1, 28-3+1)
-input_size2 = (1, 13, 13)
-pool_input_size2 = (1, 9, 9)
+kernel_size = (5, 3, 3, 1)
 scale_factor = 2; stride = 2
-fc_size = 4*4
 
-cost_func = CostLogReg
+cost_func = CostCrossEntropy
 act_func = sigmoid
 output_act = softmax
 scheduler = Adam(0.1, 0.9, 0.999)
 
-# Layers
-# conv = Convolution(input_size, kernel_size)
-# pool = MaxPool(pool_input_size, scale_factor, stride)
-# flat = FlattenedLayer()
-# fc = FullyConnected(fc_size, 20, act_func, scheduler)
-# out = FullyConnected(20, 10, act_func, scheduler)
-
 # Network
 network = Network(cost_func, input_size)
-# network.add_layer(conv)
-# network.add_layer(pool)
-# network.add_layer(flat)
-# network.add_layer(fc)
-# network.add_layer(out)
+
 
 
 network.add_Convolution_layer(kernel_size, act_func, scheduler)
