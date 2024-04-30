@@ -7,8 +7,8 @@ from convolution import Convolution
 from fullyconnected import FullyConnected
 from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
-from scheduler import Adam
-from funcs import CostLogReg, sigmoid, LRELU, softmax
+from scheduler import Adam, Momentum, Constant
+from funcs import CostLogReg, sigmoid, LRELU, softmax, padding, CostCrossEntropy
 from copy import copy
 from plotting import * #Various plotting functions, we will use heatmap
 
@@ -33,47 +33,22 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 
 # Parameters
 input_size = x_train.shape[1:]
+
+#x_train = padding(x_train)
+#x_test = padding(x_test)
+
 kernel_size = (2, 3, 3, 1)
-pool_input_size = (1, 28-3+1, 28-3+1)
-input_size2 = (1, 13, 13)
-pool_input_size2 = (1, 9, 9)
-scale_factor = 2; stride = 2
-fc_size = 4*4
+scale_factor = 2; stride = 1
+
 
 cost_func = CostLogReg
 act_func = sigmoid
 output_act = softmax
-scheduler = Adam(0.1, 0.9, 0.999)
-
-# Layers
-# conv = Convolution(input_size, kernel_size)
-# pool = MaxPool(pool_input_size, scale_factor, stride)
-# flat = FlattenedLayer()
-# fc = FullyConnected(fc_size, 20, act_func, scheduler)
-# out = FullyConnected(20, 10, act_func, scheduler)
-
-# Network
-network = Network(cost_func, input_size)
-# network.add_layer(conv)
-# network.add_layer(pool)
-# network.add_layer(flat)
-# network.add_layer(fc)
-# network.add_layer(out)
-
-
-network.add_Convolution_layer(kernel_size, act_func, scheduler)
-
-network.add_MaxPool_layer(scale_factor, stride)
-#network.add_Convolution_layer(kernel_size)
-#network.add_MaxPool_layer(scale_factor, stride)
-network.add_Flattened_layer()
-network.add_FullyConnected_layer(50, act_func, copy(scheduler))
-network.add_FullyConnected_layer(10, output_act, copy(scheduler))
 
 epochs = 50
-batches = 10
+batches = 15
 eta0 = -3; eta1 = -1; n_eta = eta1-eta0+1
-lam0 = -5; lam1 = -3; n_lam = lam1-lam0+1
+lam0 = -4; lam1 = -2; n_lam = lam1-lam0+1
 etas = np.logspace(eta0, eta1, n_eta)
 lmds = np.logspace(lam0, lam1, n_lam)
 
@@ -82,12 +57,12 @@ val_accs = np.zeros((n_eta, n_lam))
 
 rho = 0.9
 rho2 = 0.999
-
+"""
 for i in range(len(etas)):
     for j in range(len(lmds)):
         #scores = network.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
 
-        scheduler = Adam(etas[i], rho, rho2) #temporary
+        scheduler = Adam(eta=etas[i], rho = 0.9, rho2 = 0.999)  #temporary
         #scheduler = AdagradMomentum(0.01, 0.001) #temporary
         #scheduler = Constant(0.1) #temporary
         #scheduler = Momentum(eta, 0.01)
@@ -106,12 +81,12 @@ for i in range(len(etas)):
         # network.add_layer(fc)
         # network.add_layer(out)
 
-        network.add_Convolution_layer(kernel_size, act_func, copy(scheduler))
+        network.add_Convolution_layer(kernel_size, act_func, copy(scheduler), stride=2)
         network.add_MaxPool_layer(scale_factor, stride)
         #network.add_Convolution_layer(kernel_size)
         #network.add_MaxPool_layer(scale_factor, stride)
         network.add_Flattened_layer()
-        network.add_FullyConnected_layer(20, act_func, copy(scheduler))
+        network.add_FullyConnected_layer(50, act_func, copy(scheduler))
         network.add_FullyConnected_layer(10, act_func, copy(scheduler))
 
 
@@ -151,6 +126,49 @@ heatmap(data=train_accs, xticks=lmds, yticks=etas, title=title, xlabel="$\\lambd
 title = "Accuracies validation"
 filename = "heatmap_val_cnn.pdf"
 heatmap(data=val_accs, xticks=lmds, yticks=etas, title=title, xlabel="$\\lambda$", ylabel="$\\eta$", filename=filename)
+"""
+eta = 0.001
+lmbd = 0.0001
+scheduler = Adam(eta=eta, rho = 0.9, rho2 = 0.999) 
+#scheduler = AdagradMomentum(0.01, 0.001) #temporary
+#scheduler = Constant(0.1) #temporary
+#scheduler = Momentum(eta, 0.01)
+
+#scheduler = RMS_prop(0.01, 0.99)
+
+#input_layer = FullyConnected(X_shape[1], n_nodes_hidden, act_func, copy(scheduler))
+# hidden_layer = FullyConnected(n_nodes_hidden, n_nodes_hidden, sigmoid)
+#output_layer = FullyConnected(n_nodes_hidden, t_shape[1], act_func, copy(scheduler))
+
+# Create network
+network = Network(cost_func, input_size)
+# network.add_layer(conv)
+# network.add_layer(pool)
+# network.add_layer(flat)
+# network.add_layer(fc)
+# network.add_layer(out)
+
+network.add_Convolution_layer(kernel_size, act_func, copy(scheduler), stride=2)
+network.add_MaxPool_layer(scale_factor, stride)
+#network.add_Convolution_layer(kernel_size)
+#network.add_MaxPool_layer(scale_factor, stride)
+network.add_Flattened_layer()
+network.add_FullyConnected_layer(50, act_func, copy(scheduler))
+network.add_FullyConnected_layer(10, act_func, copy(scheduler))
 
 
-
+# pred = network.feed_forward(X)
+# print(pred)
+# Train network
+scores = network.train(x_train, y_train, x_test, y_test, epochs=epochs, batches=batches, lmbd = lmbd)
+print(np.argmax(scores["train_accuracy"]))
+epoch_arr = np.arange(epochs)
+plt.figure()
+plt.title("Accuracies")
+plt.plot(epoch_arr, scores["train_accuracy"], label="Training data")
+plt.plot(epoch_arr, scores["val_accuracy"], label="Validation data")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.savefig("cnn_accuracy.pdf")
+"""

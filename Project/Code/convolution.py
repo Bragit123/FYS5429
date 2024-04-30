@@ -180,11 +180,11 @@ class Convolution(Layer):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
-                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")
+                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
                     grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full")
 
         ## Compute the gradient with respect to biases.
-        grad_biases = np.sum(delta_matrix, axis=0)
+        grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
 
         ## Update the kernels and biases using gradient descent.
         self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
