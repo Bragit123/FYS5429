@@ -78,7 +78,7 @@ class Convolution(Layer):
         
         self.z = None
         ## Compute bias_size. This is equal to the output size.
-        self.bias_size = (self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1, self.num_kernels)
+        self.bias_size = (int(np.floor((self.input_height - self.kernel_height)/stride)) + 1, int(np.floor((self.input_width - self.kernel_width)/stride)) + 1, self.num_kernels)
         ## Initialize kernels and biases.
 
     def reset_weights(self):
@@ -116,10 +116,10 @@ class Convolution(Layer):
         ## Initialize output array.
         z = np.zeros(output_size)
 
-        for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
-            for j in range(0, self.input_width - self.kernel_width, self.stride):
+        for i in range(0, self.input_height - self.kernel_height +1, self.stride): #can change 1 with stride possibly
+            for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
                 for d in range(self.num_kernels):
-                    z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+                    z[:, int(i/self.stride), int(j/self.stride), d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
 
         #for n in range(num_inputs):
             #for i in range(self.num_kernels):
@@ -188,10 +188,30 @@ class Convolution(Layer):
                 for d in range(self.input_depth):
                     # Compute gradients with respect to kernels and input.
                     grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
-                    grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one
 
+    
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
+
+
+        delta_matrix = padding(delta_matrix, self.kernel_height - 1)
+        delta_height = delta_matrix.shape[1]
+        delta_width = delta_matrix.shape[2]
+
+        for i in range(0, self.input_height - self.kernel_height + 1, self.stride): #can change 1 with stride possibly
+            for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
+                for d in range(self.input_depth):
+                    for k in range(self.num_kernels):
+
+                        #z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+
+                        grad_input[:,i,j,d] += np.sum(delta_matrix[:,int(i/self.stride) : int(i/self.stride) + self.kernel_height, int(j/self.stride) : int(j/self.stride) + self.kernel_width,d]*self.kernels[k,:,:,d], axis=(1,2)) ##PS: add stride in this one
+
+        #for i in range(0, self.input_height - self.kernel_height + 1, self.stride): #can change 1 with stride possibly
+         #   for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
+          #      grad_input[:,i+1,j,:] = grad_input[:,i,j,:]
+           #     grad_input[:,i,j+1,:] = grad_input[:,i,j,:]
+            #    grad_input[:,i+1,j+1,:] = grad_input[:,i,j,:]
 
         ## Update the kernels and biases using gradient descent.
         self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
