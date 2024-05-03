@@ -7,8 +7,13 @@ from convolution import Convolution
 from fullyconnected import FullyConnected
 from flattenedlayer import FlattenedLayer
 from maxpool import MaxPool
+<<<<<<< HEAD
 from scheduler import Adam, Momentum, Constant
 from funcs import CostLogReg, sigmoid, LRELU, softmax, padding, CostCrossEntropy
+=======
+from scheduler import Adam
+from funcs import *
+>>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
 from copy import copy
 from plotting import * #Various plotting functions, we will use heatmap
 
@@ -25,6 +30,9 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 x_train = x_train[:,:,:,np.newaxis]
 x_test = x_test[:,:,:,np.newaxis]
 
+x_train = padding(x_train)
+x_test = padding(x_test)
+
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
@@ -33,6 +41,7 @@ print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
 
 # Parameters
 input_size = x_train.shape[1:]
+<<<<<<< HEAD
 
 #x_train = padding(x_train)
 #x_test = padding(x_test)
@@ -40,10 +49,32 @@ input_size = x_train.shape[1:]
 kernel_size = (2, 3, 3, 1)
 scale_factor = 2; stride = 1
 
+=======
+kernel_size = (5, 3, 3, 1)
+scale_factor = 2; stride = 2
+>>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
 
-cost_func = CostLogReg
+cost_func = CostCrossEntropy
 act_func = sigmoid
 output_act = softmax
+<<<<<<< HEAD
+=======
+scheduler = Adam(0.1, 0.9, 0.999)
+
+# Network
+network = Network(cost_func, input_size)
+
+
+
+network.add_Convolution_layer(kernel_size, act_func, scheduler)
+
+network.add_MaxPool_layer(scale_factor, stride)
+#network.add_Convolution_layer(kernel_size)
+#network.add_MaxPool_layer(scale_factor, stride)
+network.add_Flattened_layer()
+network.add_FullyConnected_layer(50, act_func, copy(scheduler))
+network.add_FullyConnected_layer(10, output_act, copy(scheduler))
+>>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
 
 epochs = 50
 batches = 15

@@ -1,8 +1,12 @@
 from scipy.signal import correlate2d, convolve2d
 import matplotlib.pyplot as plt
 from jax import vmap
-from funcs import derivate, RELU
+from funcs import derivate, RELU, padding, convolve_forward
 import numpy as np
+from numba import jit
+import warnings
+warnings.filterwarnings("ignore")
+
 
 from typing import Callable
 from copy import copy
@@ -110,27 +114,28 @@ class Convolution(Layer):
             and columns should have decreased.
         """
         self.input = input
-        num_inputs = np.shape(input)[0]
-        output_size = (num_inputs,) + self.bias_size
+        # num_inputs = np.shape(input)[0]
+        # output_size = (num_inputs,) + self.bias_size
 
         ## Initialize output array.
-        z = np.zeros(output_size)
+        # z = np.zeros(output_size)
 
-        for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
-            for j in range(0, self.input_width - self.kernel_width, self.stride):
-                for d in range(self.num_kernels):
-                    z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+        # for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
+        #     for j in range(0, self.input_width - self.kernel_width, self.stride):
+        #         for d in range(self.num_kernels):
+        #             z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
 
-        #for n in range(num_inputs):
-            #for i in range(self.num_kernels):
-                #for d in range(self.input_depth):
-                    ## Correlate input with the kernels.
-                    #corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
-                    #z[n,:,:,i] = np.sum(corr, axis=1)
+        # for n in range(num_inputs):
+        #     for i in range(self.num_kernels):
+        #         for d in range(self.input_depth):
+        #             # Correlate input with the kernels.
+        #             corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
+        #             z[n,:,:,i] = np.sum(corr, axis=1)
+        self.z = convolve_forward(input, self.kernels, self.bias)
 
         ## Compute output using activation function.
-        self.z = z
-        output = self.act_func(z)
+        # self.z = z
+        output = self.act_func(self.z)
 
         return output
     
@@ -170,18 +175,31 @@ class Convolution(Layer):
         # grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
         delta_matrix = dC_doutput * grad_act
 
-        #for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
-         #   for j in range(0, self.input_width - self.kernel_width, self.stride):
-          #      for d in range(self.num_kernels):
-           #         z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+        # for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
+        #     for j in range(0, self.input_width - self.kernel_width, self.stride):
+        #         for d in range(self.input_depth):
+        #             for c in range(self.num_kernels):
+        #                 grad_kernel[c, :, :, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, d] * delta_matrix[:,i : i + self.kernel_height, j : j + self.kernel_width, c], axis=(0,1,2))
+        #                 padded_delta = padding(delta_matrix, p=self.kernel_width-1)
+        #                 delta = np.rot90(padded_delta, 2, axes=(1, 2)) #rotate 180 degrees
+        #                 print(delta_matrix.shape)
+        #                 grad_input[:,i,j,d] = np.sum(delta_matrix[:, i : i + self.kernel_height, j : j + self.kernel_width, c] * self.kernels[c, :, :, d], axis=(1,2))
+
+
 
 
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
+<<<<<<< HEAD
                     ## Compute gradients with respect to kernels and input.
                     grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
                     grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full")
+=======
+                    # Compute gradients with respect to kernels and input.
+                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
+                    grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one
+>>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
