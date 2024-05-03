@@ -5,6 +5,7 @@ from funcs import derivate, RELU, padding, convolve_forward
 import numpy as np
 import jax.numpy as jnp
 from numba import jit
+import time
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -83,7 +84,7 @@ class Convolution(Layer):
         
         self.z = None
         ## Compute bias_size. This is equal to the output size.
-        self.bias_size = (int(np.floor((self.input_height - self.kernel_height)/stride)) + 1, int(np.floor((self.input_width - self.kernel_width)/stride)) + 1, self.num_kernels)
+        self.bias_size = (self.input_height, self.input_width, self.num_kernels) #same padding
         ## Initialize kernels and biases.
 
     def reset_weights(self):
@@ -115,17 +116,43 @@ class Convolution(Layer):
             and columns should have decreased.
         """
         self.input = input
-        # num_inputs = np.shape(input)[0]
-        # output_size = (num_inputs,) + self.bias_size
+        self.num_inputs = np.shape(input)[0]
+        output_size = (self.num_inputs,) + self.bias_size
+
+
+
+
+        i0 = np.repeat(np.arange(self.kernel_height), self.kernel_height)
+        i1 = np.repeat(np.arange(self.input_height), self.input_height)
+        j0 = np.tile(np.arange(self.kernel_width), self.kernel_height)
+        j1 = np.tile(np.arange(self.input_height), self.input_width)
+        self.i = i0.reshape(-1,1) + i1.reshape(1,-1)
+        self.j = j0.reshape(-1,1) + j1.reshape(1,-1)
+        self.k = np.repeat(np.arange(self.input_depth), self.kernel_height*self.kernel_width).reshape(-1,1)
+
+
+        self.pad = 1 #int(np.floor((self.kernel_height - 1)/2))
+        #pad_width = int((self.kernel_width - 1)/2)
+        if (self.kernel_height%2 != 0):
+            pad_img = np.pad(input,((0,0),(self.pad,self.pad),(self.pad,self.pad),(0,0)), mode="constant")
+        else:
+            pad_img = np.pad(input,((0,0),(self.pad + 1,self.pad),(self.pad + 1, self.pad),(0,0)), mode="constant")
+
+        self.select_img = pad_img[:,self.i,self.j,:].squeeze()
+        weights = self.kernels.reshape(self.kernel_height*self.kernel_width,-1)
+        convolve = weights.transpose()@self.select_img
+        z = convolve.reshape(output_size)
 
         ## Initialize output array.
         # z = np.zeros(output_size)
-
-        for i in range(0, self.input_height - self.kernel_height +1, self.stride): #can change 1 with stride possibly
-            for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
-                for d in range(self.num_kernels):
-                    z[:, int(i/self.stride), int(j/self.stride), d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
-
+        # start = time.time()
+        # for i in range(0, self.input_height - self.kernel_height + 1): #can change 1 with stride possibly
+        #     for j in range(0, self.input_width - self.kernel_width + 1):
+        #         for d in range(self.num_kernels):
+        #             z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+        #             z[:, i, j, d] += self.bias[i,j,d]
+        # end= time.time()
+        # print(end-start)
         # for n in range(num_inputs):
         #     for i in range(self.num_kernels):
         #         for d in range(self.input_depth):
@@ -136,10 +163,10 @@ class Convolution(Layer):
         # kernels = jnp.array(self.kernels)
         # bias = jnp.array(self.bias)
         # self.z = convolve_forward(input, kernels, bias)
-        self.z = convolve_forward(input, self.kernels, self.bias)
+        #self.z = convolve_forward(input, self.kernels, self.bias)
 
         ## Compute output using activation function.
-        # self.z = z
+        self.z = z
         output = self.act_func(self.z)
 
         return output
@@ -176,9 +203,37 @@ class Convolution(Layer):
         grad_biases = np.zeros(self.bias_size)
         grad_input = np.zeros(input_shape)
 
+        output_height = self.input_height + 2 * self.pad            #output height with padding
+        output_width = self.input_width + 2 * self.pad            #output width with padding
+
+
         grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
-        # grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
         delta_matrix = dC_doutput * grad_act
+        print(delta_matrix.shape)
+
+        grad_bias = np.sum(delta_matrix, axis=(0,1,2))                #bias gradient calculation
+        grad_bias = grad_bias.reshape(self.num_kernels, -1)
+
+        delta_reshape = delta_matrix.squeeze().reshape(delta_matrix.shape[0], -1, self.num_kernels)  
+        print(delta_reshape.shape)
+        print(self.select_img.shape)
+        grad_weights = self.select_img @ delta_reshape      
+        print(grad_weights.shape)         
+        grad_weights = grad_weights.reshape(self.kernels.shape)    #SOmething with batches                        #weight gradient caculation
+
+        kernel_reshape=self.kernels.reshape(self.num_kernels, -1)
+        X= kernel_reshape.T @ delta_reshape                 # gradient calculation w.r.t input image 
+                                                        
+        
+        padded=np.zeros((self.num_inputs, output_height, output_width,  self.input_depth), dtype=X.dtype)  #empty padded array
+        X_reshaped=X.reshape(self.kernel_height*self.kernel_width, -1, self.num_kernels) 
+        X_reshaped=X_reshaped.transpose(2,0,1)                       
+        np.add.at(padded, (slice(None), self.i, self.j, self.k), X_reshaped)  #gradient are stored in the corresponding locations
+        grad_input = padded[:,self.pad:-self.pad, self.pad:-self.pad,:]        #input image gradient
+
+        #grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
+        # grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
+        #delta_matrix = dC_doutput * grad_act
 
         # for i in range(0, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
         #     for j in range(0, self.input_width - self.kernel_width, self.stride):
@@ -193,39 +248,31 @@ class Convolution(Layer):
 
 
 
-        for n in range(input_shape[0]):
-            for i in range(self.num_kernels):
-                for d in range(self.input_depth):
-<<<<<<< HEAD
+        #for n in range(input_shape[0]):
+        #    for i in range(self.num_kernels):
+         #       for d in range(self.input_depth):
                     ## Compute gradients with respect to kernels and input.
-                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
-                    grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full")
-=======
-                    # Compute gradients with respect to kernels and input.
-                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
-<<<<<<< HEAD
-=======
-                    grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one
->>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
->>>>>>> c3160a2b65a10e561c04a6d6f2e3254527ffd4bb
+          #          grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
+           #         grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full")
+
 
     
         ## Compute the gradient with respect to biases.
-        grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
+        #grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
 
 
-        delta_matrix = padding(delta_matrix, self.kernel_height - 1)
-        delta_height = delta_matrix.shape[1]
-        delta_width = delta_matrix.shape[2]
+        #delta_matrix = padding(delta_matrix, self.kernel_height - 1)
+        #delta_height = delta_matrix.shape[1]
+        #delta_width = delta_matrix.shape[2]
 
-        for i in range(0, self.input_height - self.kernel_height + 1, self.stride): #can change 1 with stride possibly
-            for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
-                for d in range(self.input_depth):
-                    for k in range(self.num_kernels):
+        #for i in range(0, self.input_height - self.kernel_height + 1, self.stride): #can change 1 with stride possibly
+         #   for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
+          #      for d in range(self.input_depth):
+           #         for k in range(self.num_kernels):
 
                         #z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
 
-                        grad_input[:,i,j,d] += np.sum(delta_matrix[:,int(i/self.stride) : int(i/self.stride) + self.kernel_height, int(j/self.stride) : int(j/self.stride) + self.kernel_width,d]*self.kernels[k,:,:,d], axis=(1,2)) ##PS: add stride in this one
+            #            grad_input[:,i,j,d] += np.sum(delta_matrix[:,int(i/self.stride) : int(i/self.stride) + self.kernel_height, int(j/self.stride) : int(j/self.stride) + self.kernel_width,d]*self.kernels[k,:,:,d], axis=(1,2)) ##PS: add stride in this one
 
         #for i in range(0, self.input_height - self.kernel_height + 1, self.stride): #can change 1 with stride possibly
          #   for j in range(0, self.input_width - self.kernel_width + 1, self.stride):
