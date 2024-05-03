@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from jax import vmap
 from funcs import derivate, RELU, padding, convolve_forward
 import numpy as np
+import jax.numpy as jnp
 from numba import jit
 import warnings
 warnings.filterwarnings("ignore")
@@ -131,6 +132,10 @@ class Convolution(Layer):
         #             # Correlate input with the kernels.
         #             corr = correlate2d(input[n,:,:,d], self.kernels[i,:,:,d], "valid") + self.bias[:,:,i]
         #             z[n,:,:,i] = np.sum(corr, axis=1)
+        # input = jnp.array(input)
+        # kernels = jnp.array(self.kernels)
+        # bias = jnp.array(self.bias)
+        # self.z = convolve_forward(input, kernels, bias)
         self.z = convolve_forward(input, self.kernels, self.bias)
 
         ## Compute output using activation function.
