@@ -59,7 +59,7 @@ def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidde
 
 epochs = 50
 # batch_size = 400
-batch_size = 10
+batch_size = 1
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
 receptive_field = 3

@@ -8,11 +8,11 @@ for automatic differentiation.
 
 import jax.numpy as jnp
 import numpy as np
-from jax import grad
+from jax import grad, jit
 from scipy.signal import correlate2d, convolve2d
-from numba import jit
-import warnings
-warnings.filterwarnings("ignore")
+# from numba import jit
+# import warnings
+# warnings.filterwarnings("ignore")
 
 def CostOLS(target):
 
@@ -117,6 +117,7 @@ def padding(X, p = 1):
 
 # @jit
 def convolve_forward(input, kernels, bias):
+    print("CONVOLVING")
     num_inputs = input.shape[0]
     num_kernels = kernels.shape[0]
     # input_depth = input.shape[3]
@@ -134,12 +135,45 @@ def convolve_forward(input, kernels, bias):
     input_width = input.shape[2]
     kernel_height = kernels.shape[1]
     kernel_width = kernels.shape[2]
+    print(input.shape)
+    print(kernels.shape)
+    print(bias.shape)
     for i in range(0, input_height - kernel_height + 1): #can change 1 with stride possibly
         for j in range(0, input_width - kernel_width + 1):
             for d in range(num_kernels):
-                z[:, i, j, d] = np.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0] + bias[i,j,d]
+                z[:, i, j, d] = np.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0]
+                z[:, i, j, d] += bias[i,j,d]
 
+    print("DONE CONVOLVING")
     return z
+
+# @jit
+# def convolve_forward(input, kernels, bias):
+#     print("CONVOLVING!")
+#     num_inputs = input.shape[0]
+#     num_kernels = kernels.shape[0]
+#     # input_depth = input.shape[3]
+#     bias_size = bias.shape
+#     output_size = (num_inputs,) + bias_size
+#     z = jnp.zeros(output_size)
+#     # for n in range(num_inputs):
+#     #     for i in range(num_kernels):
+#     #         for d in range(input_depth):
+#     #             # Correlate input with the kernels.
+#     #             corr = correlate2d(input[n,:,:,d], kernels[i,:,:,d], "valid") + bias[:,:,i]
+#     #             z[n,:,:,i] = np.sum(corr, axis=1)
+    
+#     input_height = input.shape[1]
+#     input_width = input.shape[2]
+#     kernel_height = kernels.shape[1]
+#     kernel_width = kernels.shape[2]
+#     for i in range(0, input_height - kernel_height + 1): #can change 1 with stride possibly
+#         for j in range(0, input_width - kernel_width + 1):
+#             for d in range(num_kernels):
+#                 z.at[:, i, j, d].set(jnp.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0] + bias[i,j,d])
+
+#     print("DONE CONVOLVING!")
+#     return z
 
 
 
