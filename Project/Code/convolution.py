@@ -196,9 +196,15 @@ class Convolution(Layer):
         for n in range(input_shape[0]):
             for i in range(self.num_kernels):
                 for d in range(self.input_depth):
+<<<<<<< HEAD
+                    ## Compute gradients with respect to kernels and input.
+                    grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
+                    grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full")
+=======
                     # Compute gradients with respect to kernels and input.
                     grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
                     grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one
+>>>>>>> 0e857cdd6b76ae3959bab8b81f183db044322130
 
         ## Compute the gradient with respect to biases.
         grad_biases = np.sum(delta_matrix, axis=0)/input_shape[0]
