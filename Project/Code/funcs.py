@@ -9,6 +9,10 @@ for automatic differentiation.
 import jax.numpy as jnp
 import numpy as np
 from jax import grad
+from scipy.signal import correlate2d, convolve2d
+from numba import jit
+import warnings
+warnings.filterwarnings("ignore")
 
 def CostOLS(target):
 
@@ -106,3 +110,45 @@ def padding(X, p = 1):
     padded_image = np.zeros((num_inputs, height + 2*p, width + 2*p, depth)) #X has 4 dimensions
     padded_image[:,p:-1-p+1,p:-1-p+1,:] = X
     return padded_image
+
+
+
+
+
+# @jit
+def convolve_forward(input, kernels, bias):
+    num_inputs = input.shape[0]
+    num_kernels = kernels.shape[0]
+    # input_depth = input.shape[3]
+    bias_size = bias.shape
+    output_size = (num_inputs,) + bias_size
+    z = np.zeros(output_size)
+    # for n in range(num_inputs):
+    #     for i in range(num_kernels):
+    #         for d in range(input_depth):
+    #             # Correlate input with the kernels.
+    #             corr = correlate2d(input[n,:,:,d], kernels[i,:,:,d], "valid") + bias[:,:,i]
+    #             z[n,:,:,i] = np.sum(corr, axis=1)
+    
+    input_height = input.shape[1]
+    input_width = input.shape[2]
+    kernel_height = kernels.shape[1]
+    kernel_width = kernels.shape[2]
+    for i in range(0, input_height - kernel_height + 1): #can change 1 with stride possibly
+        for j in range(0, input_width - kernel_width + 1):
+            for d in range(num_kernels):
+                z[:, i, j, d] = np.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0] + bias[i,j,d]
+
+    return z
+
+
+
+
+
+# # Backpropagate
+# for n in range(input_shape[0]):
+#     for i in range(self.num_kernels):
+#         for d in range(self.input_depth):
+#             # Compute gradients with respect to kernels and input.
+#             grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
+#             grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one
