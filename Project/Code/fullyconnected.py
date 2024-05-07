@@ -130,6 +130,7 @@ class FullyConnected(Layer):
         grad_input = delta_matrix @ self.weights.T
         #grad_input = self.weights.T@delta_matrix
 
+
         # print(f"Before : {grad_weights}")
         grad_weights = grad_weights + self.weights * lmbd
         # print(f"After : {grad_weights}")

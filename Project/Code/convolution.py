@@ -6,6 +6,7 @@ import numpy as np
 import jax.numpy as jnp
 from numba import jit
 import time
+import sys
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -199,9 +200,9 @@ class Convolution(Layer):
         input_shape = np.shape(input)
         
         ## Initialize gradients.
-        grad_kernel = np.zeros(self.kernel_size)
-        grad_biases = np.zeros(self.bias_size)
-        grad_input = np.zeros(input_shape)
+       # grad_kernel = np.zeros(self.kernel_size)
+        #grad_biases = np.zeros(self.bias_size)
+        #grad_input = np.zeros(input_shape)
 
         output_height = self.input_height + 2 * self.pad            #output height with padding
         output_width = self.input_width + 2 * self.pad            #output width with padding
@@ -209,27 +210,38 @@ class Convolution(Layer):
 
         grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
         delta_matrix = dC_doutput * grad_act
-        print(delta_matrix.shape)
 
-        grad_bias = np.sum(delta_matrix, axis=(0,1,2))                #bias gradient calculation
-        grad_bias = grad_bias.reshape(self.num_kernels, -1)
+        #print(grad_act)
+
+        grad_bias = np.sum(delta_matrix, axis=0)/input_shape[0]             #bias gradient calculation
+        #grad_bias = grad_bias.reshape(self.num_kernels, -1)
 
         delta_reshape = delta_matrix.squeeze().reshape(delta_matrix.shape[0], -1, self.num_kernels)  
-        print(delta_reshape.shape)
-        print(self.select_img.shape)
-        grad_weights = self.select_img @ delta_reshape      
-        print(grad_weights.shape)         
-        grad_weights = grad_weights.reshape(self.kernels.shape)    #SOmething with batches                        #weight gradient caculation
+        #print(delta_reshape)
+        grad_weights = self.select_img @ delta_reshape   
+        grad_weights = np.sum(grad_weights, axis = 0)/grad_weights.shape[0]   #Average over batches    
+        grad_weights = grad_weights.reshape(self.kernels.shape)    #weight gradient caculation
 
         kernel_reshape=self.kernels.reshape(self.num_kernels, -1)
-        X= kernel_reshape.T @ delta_reshape                 # gradient calculation w.r.t input image 
-                                                        
+        #print(kernel_reshape.shape)
+        X = (delta_reshape @ kernel_reshape).transpose(0,2,1)                 # gradient calculation w.r.t input image    
+        #print(X.shape)
+
+                             
         
         padded=np.zeros((self.num_inputs, output_height, output_width,  self.input_depth), dtype=X.dtype)  #empty padded array
-        X_reshaped=X.reshape(self.kernel_height*self.kernel_width, -1, self.num_kernels) 
-        X_reshaped=X_reshaped.transpose(2,0,1)                       
-        np.add.at(padded, (slice(None), self.i, self.j, self.k), X_reshaped)  #gradient are stored in the corresponding locations
-        grad_input = padded[:,self.pad:-self.pad, self.pad:-self.pad,:]        #input image gradient
+        X_reshaped=X.reshape(self.num_inputs,self.kernel_height*self.kernel_width, self.input_height*self.input_width, self.input_depth)
+        #print(X_reshaped.shape)
+        #X_reshaped=X_reshaped.transpose(2,0,1)      
+        #print(padded.shape)
+        #print(X_reshaped.shape)             
+        #print(self.i.shape, self.j.shape, self.k.shape)
+        X_reshaped = np.sum(X_reshaped, axis = 1)
+        #print(X_reshaped.shape)
+        grad_input = X_reshaped.reshape(input_shape)
+        #print(grad_input.shape)
+        #np.add.at(padded, (slice(None), self.i, self.j, self.k), X_reshaped)  #gradient are stored in the corresponding locations
+        #grad_input = padded[:,self.pad:-self.pad, self.pad:-self.pad,:]        #input image gradient
 
         #grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
         # grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
@@ -281,7 +293,13 @@ class Convolution(Layer):
             #    grad_input[:,i+1,j+1,:] = grad_input[:,i,j,:]
 
         ## Update the kernels and biases using gradient descent.
-        self.kernels -= self.scheduler_kernel.update_change(grad_kernel)*lmbd
-        self.bias -= self.scheduler_bias.update_change(grad_biases)*lmbd 
+        if np.any(np.isnan(grad_weights)):
+            print(grad_weights)
+
+            sys.exit()
+        self.kernels -= self.scheduler_kernel.update_change(grad_weights)*lmbd
+
+        self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
+        
 
         return grad_input

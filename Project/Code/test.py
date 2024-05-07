@@ -3,7 +3,7 @@ from jax import vmap
 from funcs import softmax, padding
 from scipy.signal import correlate2d, convolve2d
 
-
+print(np.exp(10**3))
 
 kernel_size = (2,2,2,1)
 

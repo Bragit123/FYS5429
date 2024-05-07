@@ -174,5 +174,6 @@ class MaxPool(Layer):
                 dC_hw = np.where(self.max_ind[:,h_start:h_end, w_start:w_end,:] == 1, new_dC, 0)
                 
                 grad_input[:, h_start:h_end, w_start:w_end,:] += dC_hw
+
                 
         return grad_input
