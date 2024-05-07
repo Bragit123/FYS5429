@@ -12,8 +12,9 @@ from funcs import *
 from scheduler import *
 from plotting import * #Various plotting functions, we will use heatmap
 from funcs import padding
+from copy import copy
 
-data_frac = 0.001
+data_frac = 0.01
 # data_frac = 0.001
 
 digits = datasets.mnist.load_data(path="mnist.npz")
@@ -52,17 +53,17 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
 
 def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
     model = Network(cost_func, input_shape)
-    model.add_Convolution_layer((n_filters, 3, 3, 1), act_func, scheduler)
+    model.add_Convolution_layer((n_filters, 3, 3, 1), act_func, copy(scheduler))
     model.add_MaxPool_layer(2, 2)
     model.add_Flattened_layer()
-    model.add_FullyConnected_layer(n_hidden_neurons, act_func, scheduler)
+    model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
 
 epochs = 50
 # batch_size = 400
-batch_size = 10
+batch_size = 100
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
 receptive_field = 3
@@ -75,8 +76,8 @@ lmbd_vals = np.logspace(-5, -3, 3)
 
 train_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
 test_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
-activation = "sigmoid"
-act_func = sigmoid
+activation = "leaky_relu"
+act_func = LRELU
 
 # for i, eta in enumerate(eta_vals):
 #     for j, lmbd in enumerate(lmbd_vals):
@@ -96,7 +97,7 @@ act_func = sigmoid
 # heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_test_acc_tf.pdf")
 
 eta = 1.0
-lmbd = 0.0001
+lmbd = 0.1
 scheduler = Adam(eta, 0.9, 0.999)
 
 cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,

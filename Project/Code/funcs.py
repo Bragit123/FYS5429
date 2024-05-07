@@ -23,7 +23,7 @@ def CostOLS(target):
     return func
 
 
-
+#CostCrossEntropy(?)
 def CostLogReg(target):
 
     def func(X):

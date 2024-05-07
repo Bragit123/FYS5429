@@ -59,7 +59,7 @@ plt.show()
 # print("z:")
 # print(z- convolve[0,:,:,0])
 
-
+print(np.exp(10**3))
 
 # #stride = 2
 
