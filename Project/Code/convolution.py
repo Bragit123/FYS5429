@@ -1,7 +1,7 @@
 from scipy.signal import correlate2d, convolve2d
 import matplotlib.pyplot as plt
 from jax import vmap
-from funcs import derivate, RELU, padding, convolve_forward
+from funcs import derivate, RELU, padding, convolve_forward, correlate4d
 import numpy as np
 import jax.numpy as jnp
 from numba import jit
@@ -86,6 +86,7 @@ class Convolution(Layer):
         self.z = None
         ## Compute bias_size. This is equal to the output size.
         self.bias_size = (self.input_height, self.input_width, self.num_kernels) #same padding
+        self.bias_size = (self.input_height - self.kernel_height + 1, self.input_width - self.kernel_width + 1, self.num_kernels) #valid padding
         ## Initialize kernels and biases.
 
     def reset_weights(self):
@@ -99,7 +100,7 @@ class Convolution(Layer):
     def find_output_shape(self):
         return self.bias_size
     
-    def feed_forward(self, input: np.ndarray):
+    # def feed_forward(self, input: np.ndarray):
         """
         Feeds input forward through the neural network.
 
@@ -172,7 +173,7 @@ class Convolution(Layer):
 
         return output
     
-    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
+    # def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
         """
         Backpropagates through the layer to find the partial derivatives of the
         cost function with respect to each weight (kernel element), bias and
@@ -301,5 +302,52 @@ class Convolution(Layer):
 
         self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
         
+
+        return grad_input
+    
+    def feed_forward(self, input: np.ndarray):
+        self.input = input
+        self.num_inputs = np.shape(input)[0]
+
+        C = correlate4d(input, self.kernels, mode="XK") # Dim = [num_inputs, output_depth, height, width, depth]
+        z_sum = np.sum(C, axis=-1) # Sum over input_depth
+        z_reshaped = z_sum.transpose((0,2,3,1)) # Move output depth to last axis
+        self.z = z_reshaped + self.bias
+        output = self.act_func(self.z)
+
+        return output
+    
+    def backpropagate(self, dC_doutput: np.ndarray, lmbd: float = 0.01):
+        input = self.input
+        input_shape = np.shape(input)
+
+        grad_act = vmap(vmap(vmap(vmap(derivate(self.act_func)))))(self.z)
+        delta_matrix = dC_doutput * grad_act
+
+        ## Find gradient wrt biases
+        grad_bias = np.sum(delta_matrix, axis=0)/input_shape[0] #bias gradient calculation
+
+        ## Find gradient wrt kernels
+        grad_kernels = correlate4d(input, delta_matrix, mode="Xd") ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
+        grad_kernels = np.sum(grad_kernels, axis=0)/input_shape[0] # Normalized sum over inputs
+
+        ## Find gradient wrt input
+        # Pad delta_matrix and rotate kernel to do full convolution
+        K_h = self.kernels.shape[1]
+        K_w = self.kernels.shape[2]
+        pad_top = int(np.ceil((K_h-1)/2))
+        pad_bot = int(np.floor((K_h-1)/2))
+        pad_left = int(np.ceil((K_w-1)/2))
+        pad_right = int(np.floor((K_w-1)/2))
+        delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_top, pad_bot), (pad_left, pad_right), (0,0)))
+        kernels_rot = np.rot90(self.kernels, k=2, axes=(1,2))
+
+        # Perform the full convolution
+        grad_input = correlate4d(delta_matrix_fc, kernels_rot, mode="dK") ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
+        grad_input = np.sum(grad_input, axis=1) # Sum over output depth ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
+
+        # Update kernels and biases
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernels)*lmbd
+        self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
 
         return grad_input

@@ -14,7 +14,7 @@ from plotting import * #Various plotting functions, we will use heatmap
 from funcs import padding
 from copy import copy
 
-data_frac = 0.01
+data_frac = 0.001
 # data_frac = 0.001
 
 digits = datasets.mnist.load_data(path="mnist.npz")
@@ -63,7 +63,7 @@ def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidde
 
 epochs = 50
 # batch_size = 400
-batch_size = 100
+batch_size = 10
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
 receptive_field = 3

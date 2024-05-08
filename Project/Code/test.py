@@ -1,100 +1,97 @@
-# import numpy as np
-# from jax import vmap
-# from funcs import softmax, padding
-# from scipy.signal import correlate2d, convolve2d
-
-
-#We used Mortens lecture notes, with some tweeks, to see how the cnn of tensorflow could be implemented: https://compphysics.github.io/MachineLearning/doc/LectureNotes/_build/html/week44.html
-
-from tensorflow.keras import datasets, layers
 import numpy as np
-from tensorflow.keras.models import Sequential      #This allows appending layers to existing models
-from tensorflow.keras import optimizers             #This allows using whichever optimiser we want (sgd,adam,RMSprop)
-from tensorflow.keras import regularizers           #This allows using whichever regularizer we want (l1,l2,l1_l2)
-from tensorflow.keras.utils import to_categorical   #This allows using categorical cross entropy as the cost function
-from plotting import * #Various plotting functions, we will use heatmap
+import matplotlib.pyplot as plt
+from scipy.signal import correlate2d
 
-digits = datasets.mnist.load_data(path="mnist.npz")
+X = np.array([
+    [0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 1, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0]
+])
 
-(x_train, y_train), (x_test, y_test) = digits #The data contains a test and a train set
-x_train, x_test = x_train/255.0, x_test/255.0 #Normalising the pixel values to be in [0,1]
+K = np.array([
+    [0, 0, 0],
+    [1, 1, 1],
+    [0, 0, 0]
+])
 
-plt.title(y_train[10])
-plt.imshow(x_train[10])
-plt.show()
+plt.figure()
+plt.imshow(X)
+plt.savefig("F.pdf")
 
-# kernel_size = (2,2,2,1)
+X_sp_valid = correlate2d(X, K, mode="valid")
+X_sp_same = correlate2d(X, K, mode="same")
 
-# #input=np.array([[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6]])
-# #kernel = np.array([[1,2],[3,4]])
+plt.figure()
+plt.imshow(X_sp_valid)
+plt.savefig("sp_valid.pdf")
 
-# img=np.random.rand(1,10,10,1)
-# ker=np.random.rand(1,3,3,1)
+plt.figure()
+plt.imshow(X_sp_same)
+plt.savefig("sp_same.pdf")
 
-# ker_h = ker.shape[1]
-# ker_w = ker.shape[2]
+def correlate_valid(X, K):
+    X_h, X_w = X.shape
+    K_h, K_w = K.shape
+    z_h = X_h - K_h + 1
+    z_w = X_w - K_w + 1
 
-# img_h = img.shape[1]
-# img_w = img.shape[2]
-# img_d = img.shape[3]
+    i0 = np.repeat(np.arange(K_h), K_w).reshape((-1, 1))
+    i1 = np.repeat(np.arange(z_h), z_w).reshape((1, -1))
+    j0 = np.tile(np.arange(K_w), K_h).reshape((-1, 1))
+    j1 = np.tile(np.arange(z_w), z_h).reshape((1, -1))
 
-# i0 = np.repeat(np.arange(ker_h), ker_h)
-# i1 = np.repeat(np.arange(img_h), img_h)
-# j0 = np.tile(np.arange(ker_w), ker_h)
-# j1 = np.tile(np.arange(img_h), img_w)
-# i = i0.reshape(-1,1) + i1.reshape(1,-1)
-# j = j0.reshape(-1,1) + j1.reshape(1,-1)
-# k = np.repeat(np.arange(img_d), ker_h*ker_w).reshape(-1,1)
+    i = i0 + i1
+    j = j0 + j1
 
-# #pad_img = padding(img)
-# #print(i,j)
-# select_img = img[:,i,j,:].squeeze()
-# weights = ker.reshape(ker_h*ker_w,-1)
-# convolve = weights.transpose()@select_img
-# convolve = convolve.reshape(img.shape)
-# print(convolve[0,:,:,0])
+    Xp = X[i,j]
+    K = np.ravel(K)
 
-# z = correlate2d(padding(img)[0,:,:,0], ker[0,:,:,0], "valid") 
-# #z = np.sum(corr, axis=3)
-# print("z:")
-# print(z- convolve[0,:,:,0])
+    conv_flat = K @ Xp
+    conv = conv_flat.reshape((z_h, z_w))
 
-print(np.exp(10**3))
+    return conv
 
-# #stride = 2
+def correlate_same(X, K):
+    K_h, K_w = K.shape
+    pad_top = int(np.ceil((K_h-1)/2))
+    pad_bot = int(np.floor((K_h-1)/2))
+    pad_left = int(np.ceil((K_w-1)/2))
+    pad_right = int(np.floor((K_w-1)/2))
 
-# # z = np.zeros((3,3))
-# # for i in range(0, 4+1, stride): #can change 1 with stride possibly
-# #     for j in range(0, 4+1, stride):
-# #         print(i)
-# #         z[int(i/stride), int(j/stride)] = np.sum(input[i : i + 2, j : j + 2] * kernel, axis=(0,1))
+    X = np.pad(X, ((pad_top, pad_bot), (pad_left, pad_right)))
 
-# # pad_z = np.zeros((5,5))
-# # pad_z[1:4,1:4] = z
+    X_h, X_w = X.shape
+    z_h = X_h - K_h + 1
+    z_w = X_w - K_w + 1
 
-# # grad_input = np.zeros((6,6))
-# # for i in range(0, 6-2+1, stride): #can change 1 with stride possibly
-# #     for j in range(0, 6-2+1, stride):
-# #                         #z[:, i, j, d] = np.sum(input[:, i : i + self.kernel_height, j : j + self.kernel_width, :] * self.kernels[d, :, :, :], axis=(1,2))[:,0]
+    i0 = np.repeat(np.arange(K_h), K_w).reshape((-1, 1))
+    i1 = np.repeat(np.arange(z_h), z_w).reshape((1, -1))
+    j0 = np.tile(np.arange(K_w), K_h).reshape((-1, 1))
+    j1 = np.tile(np.arange(z_w), z_h).reshape((1, -1))
 
-# #         grad_input[i,j] = np.sum(pad_z[int(i/stride) : int(i/stride) + 2, int(j/stride) : int(j/stride) + 2]*kernel, axis=(0,1)) ##PS: add stride in this one
-# #         ##grad_input[i+1,j] = grad_input[i,j]
-# #         #grad_input[i,j+1] = grad_input[i,j]
-# #         grad_input[i+1,j+1] = grad_input[i,j]
+    i = i0 + i1
+    j = j0 + j1
 
-# #         #for i in range(1, self.input_height - self.kernel_height, self.stride): #can change 1 with stride possibly
-# #          #   for j in range(1, self.input_weight - self.kernel_width, self.stride):
-# #           #      grad_input[:,i,j,:] = grad_input
-# # print(grad_input)
-# # for i in range(0, 6-2+1, stride): #can change 1 with stride possibly
-# #     for j in range(0, 6-2+1, stride):
-# #         grad_input[i+1,j] = grad_input[i,j]
-# #         grad_input[i,j+1] = grad_input[i,j]
-# #         grad_input[i+1,j+1] = grad_input[i,j]
+    Xp = X[i,j]
+    K = np.ravel(K)
 
-# # print(z)
-# # print(grad_input)
+    conv_flat = K @ Xp
+    conv = conv_flat.reshape((z_h, z_w))
 
-# #X = np.array([[1,2,1e10],[1,2,1e10]])
+    return conv
 
-# #print(softmax(X))
+
+X_val = correlate_valid(X, K)
+X_same = correlate_same(X, K)
+
+plt.figure()
+plt.imshow(X_val)
+plt.savefig("our_val.pdf")
+
+plt.figure()
+plt.imshow(X_same)
+plt.savefig("our_same.pdf")
