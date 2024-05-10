@@ -57,8 +57,8 @@ val_accs = np.zeros((4,5))
 rho = 0.9
 rho2 = 0.999
 momentum = 0.01
-batches = 1
-epochs = 50
+batches = 10
+epochs = 20
 
 for i in range(len(etas)):
     for j in range(len(lmds)):

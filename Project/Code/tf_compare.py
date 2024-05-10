@@ -14,7 +14,7 @@ from plotting import * #Various plotting functions, we will use heatmap
 from funcs import padding
 from copy import copy
 
-data_frac = 0.001
+data_frac = 0.01
 # data_frac = 0.001
 
 digits = datasets.mnist.load_data(path="mnist.npz")
@@ -39,7 +39,7 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
                                               n_filters, n_hidden_neurons, n_categories,
                                               eta, lmbd, activation):
     model = Sequential()
-    model.add(layers.Conv2D(n_filters, (receptive_field, receptive_field), input_shape=input_shape, padding='same',
+    model.add(layers.Conv2D(n_filters, (receptive_field, receptive_field), input_shape=input_shape, padding='valid',
               activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(layers.Flatten())
@@ -63,11 +63,11 @@ def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidde
 
 epochs = 50
 # batch_size = 400
-batch_size = 10
+batch_size = 60
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
 receptive_field = 3
-n_filters = 10
+n_filters = 5
 n_hidden_neurons= 50
 n_categories = 10
 
@@ -76,8 +76,10 @@ lmbd_vals = np.logspace(-5, -3, 3)
 
 train_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
 test_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
-activation = "leaky_relu"
-act_func = LRELU
+# activation = "leaky_relu"
+# act_func = LRELU
+activation = "relu"
+act_func = RELU
 
 # for i, eta in enumerate(eta_vals):
 #     for j, lmbd in enumerate(lmbd_vals):
@@ -96,8 +98,8 @@ act_func = LRELU
 # heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_train_acc_tf.pdf")
 # heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_test_acc_tf.pdf")
 
-eta = 1.0
-lmbd = 0.1
+eta = 0.01
+lmbd = 0.001
 scheduler = Adam(eta, 0.9, 0.999)
 
 cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,
@@ -112,7 +114,15 @@ print(f"  Time used: {delta_time:.4f}")
 
 # print(history.history.keys())
 val_accs_tf = history.history["val_accuracy"]
+train_accs_tf = history.history["accuracy"]
 
+epoch_arr = np.arange(epochs)
+plt.figure()
+plt.title("Tensorflow accuracies")
+plt.plot(epoch_arr, val_accs_tf, label="Validation")
+plt.plot(epoch_arr, train_accs_tf, label="Training")
+plt.legend()
+plt.savefig("tf_compare_accs.pdf")
 
 cnn_our = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
 print("Training our network:")
@@ -122,13 +132,21 @@ t1 = time.time()
 delta_time = t1-t0
 print(f"  Time used: {delta_time:.4f}")
 val_accs_our = scores["val_accuracy"]
+train_accs_our = scores["train_accuracy"]
 
-epoch_arr = np.arange(epochs)
+plt.figure()
 plt.title("Validation accuracies")
 plt.plot(epoch_arr, val_accs_tf, label="Tensorflow")
 plt.plot(epoch_arr, val_accs_our, label="Our network")
 plt.legend()
 plt.savefig("tf_compare_accs.pdf")
+
+plt.figure()
+plt.title("Training accuracies")
+plt.plot(epoch_arr, train_accs_tf, label="Tensorflow")
+plt.plot(epoch_arr, train_accs_our, label="Our network")
+plt.legend()
+plt.savefig("tf_compare_accs_train.pdf")
 
 # train_accuracy_tf = CNN.evaluate(x_train, y_train)[1]
 # test_accuracy_tf = CNN.evaluate(x_test, y_test)[1]
