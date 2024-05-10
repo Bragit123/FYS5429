@@ -43,7 +43,7 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
               activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
+    # model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.Dense(n_categories, activation='softmax', kernel_regularizer=regularizers.l2(lmbd)))
 
     sgd = optimizers.experimental.SGD(learning_rate=eta)
@@ -51,12 +51,12 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
 
     return model
 
-def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
+def create_convolutional_neural_network_our_code(cost_func, receptive_field, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
     model = Network(cost_func, input_shape)
-    model.add_Convolution_layer((n_filters, 3, 3, 1), act_func, copy(scheduler))
+    model.add_Convolution_layer((n_filters, receptive_field, receptive_field, 1), act_func, copy(scheduler))
     model.add_MaxPool_layer(2, 2)
     model.add_Flattened_layer()
-    model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
+    # model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
@@ -66,9 +66,9 @@ epochs = 50
 batch_size = 60
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
-receptive_field = 3
+receptive_field = 5
 n_filters = 5
-n_hidden_neurons= 50
+n_hidden_neurons= 20
 n_categories = 10
 
 eta_vals = np.logspace(-2, 0, 3)
@@ -76,10 +76,9 @@ lmbd_vals = np.logspace(-5, -3, 3)
 
 train_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
 test_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
-# activation = "leaky_relu"
-# act_func = LRELU
-activation = "relu"
-act_func = RELU
+
+activation = "leaky_relu"
+act_func = LRELU
 
 # for i, eta in enumerate(eta_vals):
 #     for j, lmbd in enumerate(lmbd_vals):
@@ -124,7 +123,7 @@ plt.plot(epoch_arr, train_accs_tf, label="Training")
 plt.legend()
 plt.savefig("tf_compare_accs.pdf")
 
-cnn_our = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
+cnn_our = create_convolutional_neural_network_our_code(CostLogReg, receptive_field, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
 print("Training our network:")
 t0 = time.time()
 scores = cnn_our.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
