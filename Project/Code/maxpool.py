@@ -169,7 +169,7 @@ class MaxPool(Layer):
                 ## Find the gradient of the output corresponding to this pooling window.
                 dC_ij = dC_doutput[:,i,j,:]
 
-                ## Relate the output gradient value to the input values corresponding to the maximum in the pooling.
+                # Relate the output gradient value to the input values corresponding to the maximum in the pooling.
                 new_dC = dC_ij[:,np.newaxis,np.newaxis,:]
                 dC_hw = np.where(self.max_ind[:,h_start:h_end, w_start:w_end,:] == 1, new_dC, 0)
                 

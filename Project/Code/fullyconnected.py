@@ -120,7 +120,7 @@ class FullyConnected(Layer):
 
         ## Initialize weights and biases.
         #grad_weights = np.zeros(self.weights_size)
-        #grad_biases = np.zeros(np.shape(self.bias))
+        #grad_biases = np.zeros(np.shape(self.bias))cd On
         #grad_input = np.zeros(input_size)
 
         #dC_da = dC_doutput * grad_act(self.z)
