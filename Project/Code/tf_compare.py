@@ -39,11 +39,11 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
                                               n_filters, n_hidden_neurons, n_categories,
                                               eta, lmbd, activation):
     model = Sequential()
-    model.add(layers.Conv2D(n_filters, (receptive_field, receptive_field), input_shape=input_shape, padding="valid",
+    model.add(layers.Conv2D(n_filters, (receptive_field, receptive_field), input_shape=input_shape, padding='valid',
               activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
+    # model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.Dense(n_categories, activation='softmax', kernel_regularizer=regularizers.l2(lmbd)))
 
     sgd = optimizers.experimental.SGD(learning_rate=eta)
@@ -51,25 +51,24 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
 
     return model
 
-def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
+def create_convolutional_neural_network_our_code(cost_func, receptive_field, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
     model = Network(cost_func, input_shape)
-    model.add_Convolution_layer((2, 5, 5, 1), act_func, copy(scheduler))
-    model.add_MaxPool_layer(2, 2)
-    model.add_Convolution_layer((4, 3, 3, 2), act_func, copy(scheduler))
+    model.add_Convolution_layer((n_filters, receptive_field, receptive_field, 1), act_func, copy(scheduler))
     model.add_MaxPool_layer(2, 2)
     model.add_Flattened_layer()
+    # model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
 
 epochs = 100
 # batch_size = 400
-batch_size = 600
+batch_size = 60
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
-receptive_field = 3
+receptive_field = 5
 n_filters = 5
-n_hidden_neurons= 50
+n_hidden_neurons= 20
 n_categories = 10
 
 eta_vals = np.logspace(-2, -2, 1)
@@ -77,99 +76,65 @@ lmbd_vals = np.logspace(-2, -2, 1)
 
 train_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
 test_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
+
 activation = "leaky_relu"
 act_func = LRELU
 
 
-for i, eta in enumerate(eta_vals):
-    for j, lmbd in enumerate(lmbd_vals):
-        scheduler = Adam(eta, 0.9, 0.999)
-        CNN = create_convolutional_neural_network_keras(input_shape, receptive_field,
+#         train_accuracy[i][j] = CNN.evaluate(x_train, y_train)[1]
+#         test_accuracy[i][j] = CNN.evaluate(x_test, y_test)[1]
+#         print("Learning rate = ", eta)
+#         print("Lambda = ", lmbd)
+#         print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
+#         print()
+# # Plotting the training and test accuracy
+# heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_train_acc_tf.pdf")
+# heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_test_acc_tf.pdf")
+
+eta = 0.01
+lmbd = 0.001
+scheduler = Adam(eta, 0.9, 0.999)
+
+cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,
                                                 n_filters, n_hidden_neurons, n_categories,
                                                 eta, lmbd, activation)
         history = CNN.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, verbose=0)
 
-        train_accuracy[i][j] = CNN.evaluate(x_train, y_train)[1]
-        test_accuracy[i][j] = CNN.evaluate(x_test, y_test)[1]
-        print("Learning rate = ", eta)
-        print("Lambda = ", lmbd)
-        print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
-        print()
+# print(history.history.keys())
+val_accs_tf = history.history["val_accuracy"]
+train_accs_tf = history.history["accuracy"]
 
+epoch_arr = np.arange(epochs)
+plt.figure()
+plt.title("Tensorflow accuracies")
+plt.plot(epoch_arr, val_accs_tf, label="Validation")
+plt.plot(epoch_arr, train_accs_tf, label="Training")
+plt.legend()
+plt.savefig("tf_compare_accs.pdf")
 
-        val_accs_tf = history.history["val_accuracy"]
-        
-        epoch_arr = np.arange(epochs)
-        plt.figure()
-        plt.title("Validation accuracies")
-        plt.plot(epoch_arr, val_accs_tf, label="Tensorflow")
-        plt.legend()
-        plt.savefig("tf_accs.pdf")
-        #Plotting the training and test accuracy
-# Plotting the training and test accuracy
-heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, lrelu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cnn_train_acc_tf.pdf")
-heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, lrelu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cnn_test_acc_tf.pdf")
+cnn_our = create_convolutional_neural_network_our_code(CostLogReg, receptive_field, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
+print("Training our network:")
+t0 = time.time()
+scores = cnn_our.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
+t1 = time.time()
+delta_time = t1-t0
+print(f"  Time used: {delta_time:.4f}")
+val_accs_our = scores["val_accuracy"]
+train_accs_our = scores["train_accuracy"]
 
-for i, eta in enumerate(eta_vals):
-    for j, lmbd in enumerate(lmbd_vals):
-        scheduler = Adam(eta, 0.9, 0.999)
-        CNN = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
-        scores = CNN.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
+plt.figure()
+plt.title("Validation accuracies")
+plt.plot(epoch_arr, val_accs_tf, label="Tensorflow")
+plt.plot(epoch_arr, val_accs_our, label="Our network")
+plt.legend()
+plt.savefig("tf_compare_accs.pdf")
 
-        train_accs_our = scores["train_accuracy"]
-        val_accs_our = scores["val_accuracy"]
-
-        train_accuracy[i][j] = train_accs_our[-1]
-        test_accuracy[i][j] = val_accs_our[-1]
-        
-        print("Learning rate = ", eta)
-        print("Lambda = ", lmbd)
-        print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
-        print()
-
-        
-        plt.figure()
-        epoch_arr = np.arange(epochs)
-        plt.title("Validation accuracies")
-        plt.plot(epoch_arr, val_accs_our, label="Our network")
-        plt.legend()
-        plt.savefig("our_accs.pdf")
-        
-        #Plotting the training and test accuracy
-heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cnn_train_acc_our.pdf")
-heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cnn_test_acc_our.pdf")
-
-
-
-#cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,
-                                               # n_filters, n_hidden_neurons, n_categories,
-                                               # eta, lmbd, activation)
-# print("Training Tensorflow's network:")
-# t0 = time.time()
-# history = cnn_tf.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, verbose=0)
-# t1 = time.time()
-# delta_time = t1-t0
-# print(f"  Time used: {delta_time:.4f}")
-
-# # print(history.history.keys())
-# val_accs_tf = history.history["val_accuracy"]
-
-
-# cnn_our = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
-# print("Training our network:")
-# t0 = time.time()
-# scores = cnn_our.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
-# t1 = time.time()
-# delta_time = t1-t0
-# print(f"  Time used: {delta_time:.4f}")
-# val_accs_our = scores["val_accuracy"]
-
-# epoch_arr = np.arange(epochs)
-# plt.title("Validation accuracies")
-# plt.plot(epoch_arr, val_accs_tf, label="Tensorflow")
-# plt.plot(epoch_arr, val_accs_our, label="Our network")
-# plt.legend()
-# plt.savefig("tf_compare_accs.pdf")
+plt.figure()
+plt.title("Training accuracies")
+plt.plot(epoch_arr, train_accs_tf, label="Tensorflow")
+plt.plot(epoch_arr, train_accs_our, label="Our network")
+plt.legend()
+plt.savefig("tf_compare_accs_train.pdf")
 
 # train_accuracy_tf = CNN.evaluate(x_train, y_train)[1]
 # test_accuracy_tf = CNN.evaluate(x_test, y_test)[1]

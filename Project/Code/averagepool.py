@@ -107,7 +107,7 @@ class AveragePool(Layer):
                 input_hw = input[:, h_start:h_end, w_start:w_end, :]
 
                 ## Find average within pooling window, and update output array.
-                output_hw = np.average(input_hw, axis=(2,3))
+                output_hw = np.average(input_hw, axis=(1,2))
                 output[:,i,j,:] = output_hw 
         return output
 

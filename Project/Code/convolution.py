@@ -93,6 +93,7 @@ class Convolution(Layer):
         seed = np.random.seed(self.seed)
         self.kernels = np.random.normal(size=self.kernel_size)
         self.bias = np.random.normal(size=self.bias_size) * 0.01
+        # self.bias = np.zeros(self.bias_size)
     
     def reset_schedulers(self):
         return 0
@@ -311,8 +312,7 @@ class Convolution(Layer):
 
         C = correlate4d(input, self.kernels, mode="XK") # Dim = [num_inputs, output_depth, height, width, depth]
         z_sum = np.sum(C, axis=-1) # Sum over input_depth
-        z_reshaped = z_sum.transpose((0,2,3,1)) # Move output depth to last axis
-        self.z = z_reshaped + self.bias
+        self.z = z_sum + self.bias
         output = self.act_func(self.z)
 
         return output
@@ -335,16 +335,27 @@ class Convolution(Layer):
         # Pad delta_matrix and rotate kernel to do full convolution
         K_h = self.kernels.shape[1]
         K_w = self.kernels.shape[2]
+<<<<<<< HEAD
         pad_top = int(np.ceil(K_h-1))
         pad_bot = int(np.floor(K_h-1))
         pad_left = int(np.ceil(K_w-1))
         pad_right = int(np.floor(K_w-1))
         delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_top, pad_bot), (pad_left, pad_right), (0,0)))
+=======
+        pad_h = K_h-1
+        pad_w = K_w-1
+        # pad_top = int(np.ceil((K_h-1)/2))
+        # pad_bot = int(np.floor((K_h-1)/2))
+        # pad_left = int(np.ceil((K_w-1)/2))
+        # pad_right = int(np.floor((K_w-1)/2))
+        # delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_top, pad_bot), (pad_left, pad_right), (0,0)))
+        delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_h, pad_h), (pad_w, pad_w), (0,0)))
+>>>>>>> f533605cccf09f580ad628df47c7fa19c2cd4f8b
         kernels_rot = np.rot90(self.kernels, k=2, axes=(1,2))
 
         # Perform the full convolution
         grad_input = correlate4d(delta_matrix_fc, kernels_rot, mode="dK") ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
-        grad_input = np.sum(grad_input, axis=1) # Sum over output depth ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
+        grad_input = np.sum(grad_input, axis=-1) # Sum over output depth ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
 
         # Update kernels and biases
         self.kernels -= self.scheduler_kernel.update_change(grad_kernels)*lmbd
