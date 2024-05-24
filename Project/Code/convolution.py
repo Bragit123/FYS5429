@@ -349,7 +349,11 @@ class Convolution(Layer):
         grad_input = np.sum(grad_input, axis=-1) # Sum over output depth ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
 
         # Update kernels and biases
-        self.kernels -= self.scheduler_kernel.update_change(grad_kernels)*lmbd
-        self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
+        grad_kernels = grad_kernels + self.kernels * lmbd
+        grad_bias = grad_bias + self.bias * lmbd
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernels)
+        self.bias -= self.scheduler_bias.update_change(grad_bias)
+        # self.kernels -= self.scheduler_kernel.update_change(grad_kernels)*lmbd
+        # self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
 
         return grad_input
