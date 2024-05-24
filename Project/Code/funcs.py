@@ -113,96 +113,96 @@ def padding(X, p = 1):
     return padded_image
 
 
-def correlate4d(X, K, mode: str = "XK"):
-    """
-    Correlates two 4D arrays, used for feed_forward and backpropagation in the
-    Convolution layer. This function will be used for three different "types" of
-    input, specified by the mode. They are mostly the same, but with slight
-    changes to how the data is structured, and therefore have to be dealt with
-    slightly differently.
+# def correlate4d(X, K, mode: str = "XK"):
+#     """
+#     Correlates two 4D arrays, used for feed_forward and backpropagation in the
+#     Convolution layer. This function will be used for three different "types" of
+#     input, specified by the mode. They are mostly the same, but with slight
+#     changes to how the data is structured, and therefore have to be dealt with
+#     slightly differently.
 
-    Note: variable-naming is based on the XK case, as this was made first. Might
-    want to generalize to avoid confusion and increase readability for the two
-    other modes!
+#     Note: variable-naming is based on the XK case, as this was made first. Might
+#     want to generalize to avoid confusion and increase readability for the two
+#     other modes!
 
-    ## Input:
-        - X [num_inputs, height, width, depth]
-        - K [output_depth, height, width, depth]
-        - mode should be one of the following three:
-            - "XK" for input * kernel
-            - "Xd" for input * delta_matrix
-            - "dK" for full convolution delta_matrix * kernel
-    ## Output:
-        - C [num_inputs, output_depth, height, width, depth] where height/width
-          are for output/kernel/input for mode XK, Xd and dK respectively.
-    """
-    X_h = X.shape[1]
-    X_w = X.shape[2]
-    K_h = K.shape[1]
-    K_w = K.shape[2]
-    z_h = X_h - K_h + 1
-    z_w = X_w - K_w + 1
-    num_inputs = X.shape[0]
-    input_depth = X.shape[3]
-    num_kernels = K.shape[0]
-    kernel_depth = K.shape[3]
+#     ## Input:
+#         - X [num_inputs, height, width, depth]
+#         - K [output_depth, height, width, depth]
+#         - mode should be one of the following three:
+#             - "XK" for input * kernel
+#             - "Xd" for input * delta_matrix
+#             - "dK" for full convolution delta_matrix * kernel
+#     ## Output:
+#         - C [num_inputs, output_depth, height, width, depth] where height/width
+#           are for output/kernel/input for mode XK, Xd and dK respectively.
+#     """
+#     X_h = X.shape[1]
+#     X_w = X.shape[2]
+#     K_h = K.shape[1]
+#     K_w = K.shape[2]
+#     z_h = X_h - K_h + 1
+#     z_w = X_w - K_w + 1
+#     num_inputs = X.shape[0]
+#     input_depth = X.shape[3]
+#     num_kernels = K.shape[0]
+#     kernel_depth = K.shape[3]
 
-    # Compute output dimensions (assuming "valid" convolution)
-    out_h = X_h - K_h + 1
-    out_w = X_w - K_w + 1
+#     # Compute output dimensions (assuming "valid" convolution)
+#     out_h = X_h - K_h + 1
+#     out_w = X_w - K_w + 1
 
-    i0 = np.repeat(np.arange(K_h), K_w).reshape((-1, 1))
-    i1 = np.repeat(np.arange(z_h), z_w).reshape((1, -1))
-    j0 = np.tile(np.arange(K_w), K_h).reshape((-1, 1))
-    j1 = np.tile(np.arange(z_w), z_h).reshape((1, -1))
+#     i0 = np.repeat(np.arange(K_h), K_w).reshape((-1, 1))
+#     i1 = np.repeat(np.arange(z_h), z_w).reshape((1, -1))
+#     j0 = np.tile(np.arange(K_w), K_h).reshape((-1, 1))
+#     j1 = np.tile(np.arange(z_w), z_h).reshape((1, -1))
 
-    i = i0 + i1
-    j = j0 + j1
+#     i = i0 + i1
+#     j = j0 + j1
 
-    X = X[:,i,j,:] # Find indices for matrix multiplication X
+#     X = X[:,i,j,:] # Find indices for matrix multiplication X
 
-    if mode == "XK":
-        X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
-        X = X[:,np.newaxis,:,:,:] # Add axis to keep both num_elements from X and output_depth from K
+#     if mode == "XK":
+#         X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
+#         X = X[:,np.newaxis,:,:,:] # Add axis to keep both num_elements from X and output_depth from K
 
-        K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
-        K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
-        K = K[np.newaxis,:,:,np.newaxis,:] # First axis for same reason as in X, second axis for matmul to work
+#         K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
+#         K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
+#         K = K[np.newaxis,:,:,np.newaxis,:] # First axis for same reason as in X, second axis for matmul to work
 
-        C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, output_depth, depth, output_elements]
-        C = C.reshape((num_inputs, num_kernels, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
-        C = C.transpose((0,1,3,4,2)) # Move depth to last axis
+#         C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, output_depth, depth, output_elements]
+#         C = C.reshape((num_inputs, num_kernels, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
+#         C = C.transpose((0,1,3,4,2)) # Move depth to last axis
 
-    elif mode == "Xd":
-        X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
+#     elif mode == "Xd":
+#         X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
 
-        K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
-        K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
-        K = K[:,np.newaxis,:,:] # Add axis for matrix multiplication to work
+#         K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
+#         K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
+#         K = K[:,np.newaxis,:,:] # Add axis for matrix multiplication to work
 
-        C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, depth, output_depth, kernel_elements]
-        C = C.reshape((num_inputs, input_depth, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
-        C = C.transpose((0,2,3,4,1)) # Move depth to last axis
+#         C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, depth, output_depth, kernel_elements]
+#         C = C.reshape((num_inputs, input_depth, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
+#         C = C.transpose((0,2,3,4,1)) # Move depth to last axis
 
-    elif mode == "dK":
-        X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
+#     elif mode == "dK":
+#         X = X.transpose((0,3,1,2)) # Get rows and cols as two last axes for matmul to work
 
-        K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
-        K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
-        K = K[np.newaxis,:,:,:] # Add axis for matrix multiplication to work
+#         K = K.reshape((num_kernels, K_h*K_w, kernel_depth)) # Get all row-col elements at one axis
+#         K = K.transpose((0,2,1)) # Want row-col elements at rightmost for matrix multiplication
+#         K = K[np.newaxis,:,:,:] # Add axis for matrix multiplication to work
 
-        C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, output_depth, depth, input_elements]
-        C = C.reshape((num_inputs, num_kernels, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
-        C = C.transpose((0,1,3,4,2)) # Move depth to last axis
+#         C = K @ X # Perform matrix multiplication. Dimension now is [num_inputs, output_depth, depth, input_elements]
+#         C = C.reshape((num_inputs, num_kernels, kernel_depth, out_h, out_w)) # Un-flatten rows and cols of output
+#         C = C.transpose((0,1,3,4,2)) # Move depth to last axis
 
-    else:
-        print(f"Error in correlate4d: mode = {mode} not recognized. Should be 'XK', 'Xd' or 'dK'.")
+#     else:
+#         print(f"Error in correlate4d: mode = {mode} not recognized. Should be 'XK', 'Xd' or 'dK'.")
     
 
-    # Return convolved matrix. Axes (0,1,4) are (num_inputs, output_depth, :, :,
-    # depth). Axes (2,3) are height and width of output/kernel/input for mode
-    # XK, Xd and dK respectively.
-    return C
+#     # Return convolved matrix. Axes (0,1,4) are (num_inputs, output_depth, :, :,
+#     # depth). Axes (2,3) are height and width of output/kernel/input for mode
+#     # XK, Xd and dK respectively.
+#     return C
 
 
 
