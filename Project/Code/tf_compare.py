@@ -60,6 +60,14 @@ def create_convolutional_neural_network_our_code(cost_func, receptive_field, inp
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
+def create_convolutional_neural_network_our_code_w_o_n(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
+    model = Network(cost_func, input_shape)
+    model.add_Convolution_layer((n_filters, 3, 3, 1), act_func, copy(scheduler))
+    model.add_AveragePool_layer(2, 2)
+    model.add_Flattened_layer()
+    #model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
+    model.add_FullyConnected_layer(10, softmax, scheduler)
+    return model
 
 epochs = 100
 # batch_size = 400
