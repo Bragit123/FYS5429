@@ -116,56 +116,33 @@ train_accs_tf = history.history["accuracy"]
 
 
 #Plotting for different eta/lambda start
+for i, eta in enumerate(eta_vals):
+    for j, lmbd in enumerate(lmbd_vals):
+        scheduler = Adam(eta, 0.9, 0.999)
+        CNN = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
+        scores = CNN.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
 
-epochs = 100
-# batch_size = 400
-batch_size = 400
-batches = x_train.shape[0] // batch_size
-input_shape = x_train.shape[1:4]
-receptive_field = 3
-n_filters = 4
-n_hidden_neurons= 10
-n_categories = 10
+        train_accs_our = scores["train_accuracy"]
+        val_accs_our = scores["val_accuracy"]
 
-eta_vals = np.logspace(0, -4, 5)
-lmbd_vals = np.logspace(-4, 0, 5)
-batch_size = [80,100,150,200]
-n_filtersl = [1, 2, 3, 4, 5]
-n_hidden_neurons = [1,2,3,4,5]
-# activation = "leaky_relu"
-# act_func = LRELU
-activation = "lrelu"
-act_func = LRELU
-max = 0
-
-train_accuracy = np.zeros((len(lmbd_vals), len(eta_vals)))
-validation_accuracy = np.zeros((len(lmbd_vals), len(eta_vals)))
-
-
-def rotate_matrix_90_clockwise(matrix):
-    transposed_matrix = np.transpose(matrix)
-    
-    rotated_matrix = np.flip(transposed_matrix, axis=1)
-    
-    return rotated_matrix
-
-for i in range(len(lmbd_vals)):
-    for j in range(len(eta_vals)):
-            scheduler = Adam(eta_vals[j], 0.9, 0.999)
-            CNN = create_convolutional_neural_network_our_code_w_o_n(CostLogReg, input_shape, None, act_func, scheduler, 20)
-            scores = CNN.train(x_train, y_train, x_test, y_test, epochs, 100, lmbd_vals[i])
-
-            train_accs_our = scores["train_accuracy"]
-            val_accs_our = scores["val_accuracy"]
-            cur_max = np.max(val_accs_our)
-            train_accuracy[i][j] = train_accs_our[-1]
-            validation_accuracy[i][j] = val_accs_our[-1]
-
-train_accuracy = rotate_matrix_90_clockwise(train_accuracy)
-validation_accuracy = rotate_matrix_90_clockwise(validation_accuracy)
-
-heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, LRELU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/20F_20HN_6000IMG_100EP_200B_cnn_train_acc_mod.pdf")
-heatmap(validation_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, LRELU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/20F_20HN_6000IMG_100EP_200B_cnn_test_acc_mod.pdf")
+        train_accuracy[i][j] = train_accs_our[-1]
+        test_accuracy[i][j] = val_accs_our[-1]
+        print("Learning rate = ", eta)
+        print("Lambda = ", lmbd)
+        print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
+        print()
+        
+        plt.figure()
+        epoch_arr = np.arange(epochs)
+        plt.figure()
+        plt.title("Validation accuracies")
+        plt.plot(epoch_arr, val_accs_our, label="Our network")
+        plt.legend()
+        plt.savefig("our_accs_cifar10.pdf")
+        #Plotting the training and test accuracy
+# Plotting the training and test accuracy
+heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, relu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_our.pdf")
+heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, relu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_our.pdf")
 
 #Plotting for different eta/lambda end
 
