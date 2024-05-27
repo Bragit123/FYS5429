@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-from jax import random
 import jax.numpy as jnp
 
 from layer import Layer

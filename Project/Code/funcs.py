@@ -1,19 +1,13 @@
 """
-This code is copied from the lecture notes by Morten Hjort-Jensen at the
-following link:
+The correlate4d function is developed by us, and so is the softmax and grad_softmax functions.
+Except for that, the code is copied from the lecture notes by Morten Hjort-Jensen at the following link:
 https://compphysics.github.io/MachineLearning/doc/LectureNotes/_build/html/exercisesweek43.html#cost-functions
-The only change made to these functions are that we use jax instead of autograd
-for automatic differentiation.
+The only change made to these functions are that we use jax instead of autograd for automatic differentiation.
 """
 
 import jax.numpy as jnp
 import numpy as np
-from jax import grad, jit
-from scipy.signal import correlate2d, convolve2d
-import time
-# from numba import jit
-# import warnings
-# warnings.filterwarnings("ignore")
+from jax import grad
 
 def CostOLS(target):
 
@@ -42,12 +36,6 @@ def CostCrossEntropy(target):
 
     return func
 
-# def CategoricalCrossEntropy(target):
-
-#     def func(X):
-#         return -jnp.sum(target * jnp.log(X + 10e-10))
-
-#     return func
 
 def identity(X):
     return X
@@ -64,15 +52,10 @@ def softmax(X):
     X = X - np.max(X, axis=-1, keepdims=True)
     delta = 10e-10
     return np.exp(X) / (np.sum(np.exp(X), axis=-1, keepdims=True) + delta)
-# def softmax(X, X_sum):
-#     X = X - np.max(X, axis=-1, keepdims=True)
-#     delta = 10e-10
-#     return np.exp(X) / X_sum
+
 
 def grad_softmax(X):
     f = softmax(X)
-    #f @ f
-    #f[i]*(i==j) - f[i]*f[j]
     return f - f**2
     
 
@@ -104,16 +87,6 @@ def derivate(func):
 
     else:
         return grad(func)
-
-
-def padding(X, p = 1):
-    num_inputs, height, width, depth = X.shape
-    padded_image = np.zeros((num_inputs, height + 2*p, width + 2*p, depth)) #X has 4 dimensions
-    padded_image[:,p:-1-p+1,p:-1-p+1,:] = X
-    return padded_image
-
-
-
 
 
 def correlate4d(A, B, mode: str = "XK"):
@@ -148,14 +121,6 @@ def correlate4d(A, B, mode: str = "XK"):
     # Compute output dimensions (assuming "valid" convolution)
     C_h = A_h - B_h + 1
     C_w = A_w - B_w + 1
-    
-    # num_inputs = X.shape[0]
-    # input_depth = X.shape[3]
-    # num_kernels = K.shape[0]
-    # kernel_depth = K.shape[3]
-
-    # out_h = X_h - K_h + 1
-    # out_w = X_w - K_w + 1
 
     i0 = np.repeat(np.arange(B_h), B_w).reshape((-1, 1))
     i1 = np.repeat(np.arange(C_h), C_w).reshape((1, -1))
@@ -227,81 +192,3 @@ def correlate4d(A, B, mode: str = "XK"):
     # depth). Axes (2,3) are height and width of output/kernel/input for mode
     # XK, Xd and dK respectively.
     return C
-
-
-
-
-
-
-# @jit
-def convolve_forward(input, kernels, bias):
-    #print("CONVOLVING")
-    num_inputs = input.shape[0]
-    num_kernels = kernels.shape[0]
-    # input_depth = input.shape[3]
-    bias_size = bias.shape
-    output_size = (num_inputs,) + bias_size
-    z = np.zeros(output_size)
-    # for n in range(num_inputs):
-    #     for i in range(num_kernels):
-    #         for d in range(input_depth):
-    #             # Correlate input with the kernels.
-    #             corr = correlate2d(input[n,:,:,d], kernels[i,:,:,d], "valid") + bias[:,:,i]
-    #             z[n,:,:,i] = np.sum(corr, axis=1)
-    
-    input_height = input.shape[1]
-    input_width = input.shape[2]
-    kernel_height = kernels.shape[1]
-    kernel_width = kernels.shape[2]
-    #print(input.shape)
-    #print(kernels.shape)
-    #print(bias.shape)
-    start = time.time()
-    for i in range(0, input_height - kernel_height + 1): #can change 1 with stride possibly
-        for j in range(0, input_width - kernel_width + 1):
-            for d in range(num_kernels):
-                z[:, i, j, d] = np.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0]
-                z[:, i, j, d] += bias[i,j,d]
-    end = time.time()
-    print(end-start)
-    return z
-
-# @jit
-# def convolve_forward(input, kernels, bias):
-#     print("CONVOLVING!")
-#     num_inputs = input.shape[0]
-#     num_kernels = kernels.shape[0]
-#     # input_depth = input.shape[3]
-#     bias_size = bias.shape
-#     output_size = (num_inputs,) + bias_size
-#     z = jnp.zeros(output_size)
-#     # for n in range(num_inputs):
-#     #     for i in range(num_kernels):
-#     #         for d in range(input_depth):
-#     #             # Correlate input with the kernels.
-#     #             corr = correlate2d(input[n,:,:,d], kernels[i,:,:,d], "valid") + bias[:,:,i]
-#     #             z[n,:,:,i] = np.sum(corr, axis=1)
-    
-#     input_height = input.shape[1]
-#     input_width = input.shape[2]
-#     kernel_height = kernels.shape[1]
-#     kernel_width = kernels.shape[2]
-#     for i in range(0, input_height - kernel_height + 1): #can change 1 with stride possibly
-#         for j in range(0, input_width - kernel_width + 1):
-#             for d in range(num_kernels):
-#                 z.at[:, i, j, d].set(jnp.sum(input[:, i : i + kernel_height, j : j + kernel_width, :] * kernels[d, :, :, :], axis=(1,2))[:,0] + bias[i,j,d])
-
-#     print("DONE CONVOLVING!")
-#     return z
-
-
-
-
-
-# # Backpropagate
-# for n in range(input_shape[0]):
-#     for i in range(self.num_kernels):
-#         for d in range(self.input_depth):
-#             # Compute gradients with respect to kernels and input.
-#             grad_kernel[i,:,:,d] += correlate2d(input[n,:,:,d], delta_matrix[n,:,:,i], "valid")/input_shape[0]
-#             grad_input[n,:,:,d] += convolve2d(delta_matrix[n,:,:,i], self.kernels[i,:,:,d], "full") ##PS: add stride in this one

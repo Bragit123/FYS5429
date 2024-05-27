@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
 from layer import Layer
-from functools import partial
 
 class MaxPool(Layer):
     """
@@ -121,7 +120,6 @@ class MaxPool(Layer):
                 compare = output_hw[:,np.newaxis,np.newaxis,:]
                 max_ind_hw = np.where(compare == input_hw, 1, 0)
 
-                zero_matrix = np.zeros(self.max_ind_size)
                 max_ind[:, h_start:h_end, w_start:w_end,:] += max_ind_hw
 
         # The pooling window might find the same maximum more than one time,

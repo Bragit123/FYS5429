@@ -44,7 +44,7 @@ def heatmap(data, xticks, yticks, title, xlabel, ylabel, filename):
     fig.savefig(filename, bbox_inches='tight')
     plt.close()
 
-## Søyleplot
+## Barplot
 def barplot(x, y, xlabel, ylabel, title, filename):
     plt.figure()
     plt.title(title, fontsize=label_size)

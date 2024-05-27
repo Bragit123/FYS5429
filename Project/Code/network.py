@@ -8,7 +8,7 @@ from averagepool import AveragePool
 from flattenedlayer import FlattenedLayer
 from fullyconnected import FullyConnected
 
-from funcs import RELU, sigmoid, derivate
+from funcs import derivate
 from copy import copy 
 
 class Network:
@@ -43,7 +43,6 @@ class Network:
         predicted = np.zeros_like(output)
         ind_1_axis = np.argmax(output,axis=1)
 
-        #or i in range(predicted.shape[0]):
         ind_0_axis = np.arange(predicted.shape[0])
         predicted[ind_0_axis, ind_1_axis] = 1
         return predicted
@@ -51,10 +50,6 @@ class Network:
     def backpropagate(self, output, target, lmbd = 0.1):
         grad_cost = derivate(self.cost_func(target))
         dC_doutput = grad_cost(output)
-
-        #print(-(1.0 / target.shape[0]) * (target/(output+10**(-10))-(1-target)/(1-output+10**(-10))))
-        #print(dC_doutput)
-
 
         for i in range(self.num_layers-1, -1, -1):
             dC_doutput = self.layers[i].backpropagate(dC_doutput, lmbd = lmbd)
@@ -94,14 +89,10 @@ class Network:
             train_error[e] = train_cost(train_predict)
             train_accuracy[e] = np.mean(np.all(train_predict == target_train, axis = 1))
 
-            #print(np.all(train_predict == target_train, axis = 1))
-
             if input_val is not None:
                 val_predict = self.predict(input_val)
                 val_error[e] = val_cost(val_predict)
                 val_accuracy[e] = np.mean(np.all(val_predict == target_val, axis = 1))
-                #print(np.all(val_predict == target_val, axis = 1))
-                #print(val_accuracy[e])
                 val_output = self.feed_forward(input_val)
 
 
