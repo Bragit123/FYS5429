@@ -9,7 +9,7 @@ from plotting import * #Various plotting functions, we will use heatmap
 from funcs import padding
 from copy import copy
 
-data_frac = 0.1
+data_frac = 0.01
 
 
 digits = datasets.mnist.load_data(path="mnist.npz")
