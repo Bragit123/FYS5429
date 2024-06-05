@@ -43,11 +43,11 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
               activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(layers.Flatten())
-    # model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
+    model.add(layers.Dense(n_hidden_neurons, activation=activation, kernel_regularizer=regularizers.l2(lmbd)))
     model.add(layers.Dense(n_categories, activation='softmax', kernel_regularizer=regularizers.l2(lmbd)))
 
-    sgd = optimizers.experimental.SGD(learning_rate=eta)
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    adam = optimizers.Adam(eta, 0.9, 0.999)
+    model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
 
     return model
 
@@ -56,19 +56,19 @@ def create_convolutional_neural_network_our_code(cost_func, receptive_field, inp
     model.add_Convolution_layer((n_filters, receptive_field, receptive_field, 1), act_func, copy(scheduler))
     model.add_MaxPool_layer(2, 2)
     model.add_Flattened_layer()
-    # model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
+    model.add_FullyConnected_layer(n_hidden_neurons, act_func, copy(scheduler))
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
 
-epochs = 100
+epochs = 50
 # batch_size = 400
 batch_size = 60
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
 receptive_field = 5
 n_filters = 5
-n_hidden_neurons= 20
+n_hidden_neurons= 10
 n_categories = 10
 
 eta_vals = np.logspace(-2, -2, 1)
@@ -98,7 +98,7 @@ scheduler = Adam(eta, 0.9, 0.999)
 cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,
                                                 n_filters, n_hidden_neurons, n_categories,
                                                 eta, lmbd, activation)
-        history = CNN.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, verbose=0)
+history = cnn_tf.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, verbose=0)
 
 # print(history.history.keys())
 val_accs_tf = history.history["val_accuracy"]

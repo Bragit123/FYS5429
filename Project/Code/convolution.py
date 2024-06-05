@@ -335,13 +335,6 @@ class Convolution(Layer):
         # Pad delta_matrix and rotate kernel to do full convolution
         K_h = self.kernels.shape[1]
         K_w = self.kernels.shape[2]
-<<<<<<< HEAD
-        pad_top = int(np.ceil(K_h-1))
-        pad_bot = int(np.floor(K_h-1))
-        pad_left = int(np.ceil(K_w-1))
-        pad_right = int(np.floor(K_w-1))
-        delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_top, pad_bot), (pad_left, pad_right), (0,0)))
-=======
         pad_h = K_h-1
         pad_w = K_w-1
         # pad_top = int(np.ceil((K_h-1)/2))
@@ -350,7 +343,6 @@ class Convolution(Layer):
         # pad_right = int(np.floor((K_w-1)/2))
         # delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_top, pad_bot), (pad_left, pad_right), (0,0)))
         delta_matrix_fc = np.pad(delta_matrix, ((0,0), (pad_h, pad_h), (pad_w, pad_w), (0,0)))
->>>>>>> f533605cccf09f580ad628df47c7fa19c2cd4f8b
         kernels_rot = np.rot90(self.kernels, k=2, axes=(1,2))
 
         # Perform the full convolution
@@ -358,7 +350,8 @@ class Convolution(Layer):
         grad_input = np.sum(grad_input, axis=-1) # Sum over output depth ####### OBS OBS! DETTE GÅR KANSKJE IKKE!!!!
 
         # Update kernels and biases
-        self.kernels -= self.scheduler_kernel.update_change(grad_kernels)*lmbd
-        self.bias -= self.scheduler_bias.update_change(grad_bias)*lmbd 
+        grad_kernels = grad_kernels + self.kernels*lmbd #L2 regularization
+        self.kernels -= self.scheduler_kernel.update_change(grad_kernels)
+        self.bias -= self.scheduler_bias.update_change(grad_bias)
 
         return grad_input

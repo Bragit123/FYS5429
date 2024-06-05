@@ -132,7 +132,7 @@ class FullyConnected(Layer):
 
 
         # print(f"Before : {grad_weights}")
-        grad_weights = grad_weights + self.weights * lmbd
+        grad_weights = grad_weights + self.weights * lmbd #L2 regularization
         # print(f"After : {grad_weights}")
 
         #for i in range(self.input_length):
