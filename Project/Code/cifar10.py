@@ -151,8 +151,8 @@ for i, eta in enumerate(eta_vals):
         plt.savefig("tf_accs_cifar10.pdf")
 
 # Plotting the training and test accuracy
-heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_small_500.pdf")
-heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_small_500.pdf")
+heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cifar10_train_small_500.pdf")
+heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cifar10_test_small_500.pdf")
 
 
 #Our model train and validation
@@ -180,5 +180,5 @@ for i, eta in enumerate(eta_vals):
         plt.legend()
         plt.savefig("our_accs_cifar10.pdf")
 # Plotting the training and test accuracy
-heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_our.pdf")
-heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_our.pdf")
+heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cifar10_train_our.pdf")
+heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cifar10_test_our.pdf")
