@@ -17,8 +17,8 @@ This code contains our code, and is split into three categories. The first consi
 - *fullyconnected.py* is the class for the fully connected layers.
 
 ## The result generators
-- HER MÅ VI LEGGE TIL NÅR VI VET HVILKE FILER SOM SKAL VÆRE MED! (bør gi navnet, hvilken data den ser på, og hvilken type figurer den produserer).
-- *cifar10.py* is the file where we produce results for the CIFAR-10 dataset, the data is contained in the *cifar10data* folder.
+- *mnist.py* produces results, i.e. figures for the MNIST dataset.
+- *cifar10.py* is the file where we produce results for the CIFAR-10 dataset, the dataset is contained in the *cifar10data* folder.
 
 [^1]: https://www.tensorflow.org/datasets/catalog/mnist
 [^2]: https://www.cs.toronto.edu/~kriz/cifar.html
