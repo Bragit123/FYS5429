@@ -37,12 +37,11 @@ class AveragePool(Layer):
         Constructor
 
         ## Parameters:
-        - input_size (tuple): Shape of input array containing four values, one
-        for each dimension of input. The four tuple values are
-            0: Number of inputs.
-            1: Number of rows.
-            2: Number of columns.
-            3: Input depth.
+        - input_size (tuple): Shape of input array containing three values, one
+        for each dimension of input. The three tuple values are
+            0: Number of rows.
+            1: Number of columns.
+            2: Input depth.
         - scale_factor (int): Number of rows and columns of the pooling window.
           This value is an integer, as we only consider square pooling windows
           (equal number of rows and columns).

@@ -15,18 +15,15 @@ import time
 from funcs import *
 from scheduler import *
 from plotting import * #Various plotting functions, we will use heatmap
-from funcs import padding
 from copy import copy
 
 import os
 os.environ['SSL_CERT_FILE'] = ''
 
+#Getting the data:
+
 data_frac = 0.01
 
- 
-# Distribute it to train and test set
-#(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
-#print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 import pickle
 
 def unpickle(file):
@@ -37,7 +34,7 @@ def unpickle(file):
 filename = "cifar10data/data_batch_"
 
 x_train = np.zeros((50000,32,32,3))
-x_test = np.zeros((10000,32,32,3))
+x_test = np.zeros((10000,32,32,3))  #We have written test many places, but this is really validation, since we test many different hyperparameters
 
 y_train = np.zeros(50000)
 y_test = np.zeros(10000)
@@ -53,7 +50,7 @@ test_dict = unpickle("cifar10data/test_batch")
 x_test = np.array(test_dict[b"data"].reshape((10000, 3, 32, 32)).transpose(0, 2, 3, 1))
 y_test = np.array(test_dict[b"labels"])
 
-#Transforming the labels from a single digit to an array of length 10 with the digit corresponding to the index
+#Transforming to one hot encoded labels:
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
@@ -78,17 +75,15 @@ y_test = y_test[0:int(data_frac*len(y_test))]
 
 
 
-
+#Tensorflow model:
 def create_convolutional_neural_network_keras(input_shape, receptive_field,
                                               n_filters, n_hidden_neurons, n_categories,
                                               eta, lmbd, activation, rho, rho2):
     model = Sequential()
     model.add(layers.Conv2D(6, (4, 4), padding='valid', activation='leaky_relu', input_shape=(32, 32, 3)))
     model.add(layers.MaxPooling2D((2, 2)))
-    #model.add(layers.MaxPooling2D((2, 2)))
 
     model.add(layers.Flatten())
-    #model.add(layers.Dense(20, activation='leaky_relu'))
     model.add(layers.Dense(10, activation='softmax'))
 
     adam = optimizers.Adam(eta, rho, rho2)
@@ -96,19 +91,18 @@ def create_convolutional_neural_network_keras(input_shape, receptive_field,
 
     return model
 
+#Our model:
 def create_convolutional_neural_network_our_code(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
     model = Network(cost_func, input_shape)
     model.add_Convolution_layer((6, 4, 4, 3), act_func, copy(scheduler))
     model.add_MaxPool_layer(2, 2)
-    #model.add_Convolution_layer((8, 3, 3, 6), act_func, copy(scheduler))
-    #model.add_MaxPool_layer(2, 2)
 
     model.add_Flattened_layer()
-    #model.add_FullyConnected_layer(20, act_func, scheduler)
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
 
+#Parameters
 epochs = 50
 batch_size = 50
 batches = x_train.shape[0] // batch_size
@@ -118,6 +112,7 @@ n_filters = 10
 n_hidden_neurons= 50
 n_categories = 10
 
+#Learning rates and regularization parameters we will look into
 eta_vals = np.logspace(-5, -2, 4)
 lmbd_vals = np.logspace(-5, -2, 4)
 
@@ -129,7 +124,7 @@ act_func = LRELU
 rho = 0.9
 rho2 = 0.999
 
-
+#Tensorflow train and validation
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
 
@@ -154,13 +149,13 @@ for i, eta in enumerate(eta_vals):
         plt.plot(epoch_arr, val_accs_tf, label="Tensorflow")
         plt.legend()
         plt.savefig("tf_accs_cifar10.pdf")
-        #Plotting the training and test accuracy
+
 # Plotting the training and test accuracy
 heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_small_500.pdf")
 heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_small_500.pdf")
 
 
-
+#Our model train and validation
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         scheduler = Adam(eta, 0.9, 0.999)
@@ -184,7 +179,6 @@ for i, eta in enumerate(eta_vals):
         plt.plot(epoch_arr, val_accs_our, label="Our network")
         plt.legend()
         plt.savefig("our_accs_cifar10.pdf")
-        #Plotting the training and test accuracy
 # Plotting the training and test accuracy
 heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_our.pdf")
 heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Validation Accuracy, Leaky ReLU", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_our.pdf")

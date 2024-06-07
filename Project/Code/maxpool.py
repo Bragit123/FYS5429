@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
 from layer import Layer
-from functools import partial
 
 class MaxPool(Layer):
     """
@@ -42,8 +41,8 @@ class MaxPool(Layer):
         Constructor
 
         ## Parameters:
-        - input_size (tuple): Shape of input array containing four values, one
-        for each dimension of input. The four tuple values are
+        - input_size (tuple): Shape of input array containing three values, one
+        for each dimension of input. The three tuple values are
             0: Number of rows.
             1: Number of columns.
             2: Input depth.
@@ -121,7 +120,6 @@ class MaxPool(Layer):
                 compare = output_hw[:,np.newaxis,np.newaxis,:]
                 max_ind_hw = np.where(compare == input_hw, 1, 0)
 
-                zero_matrix = np.zeros(self.max_ind_size)
                 max_ind[:, h_start:h_end, w_start:w_end,:] += max_ind_hw
 
         # The pooling window might find the same maximum more than one time,

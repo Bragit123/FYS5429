@@ -1,8 +1,7 @@
 
-import matplotlib.pyplot as plt
-from jax import vmap, grad
+from jax import vmap
 import numpy as np
-from funcs import RELU, sigmoid, derivate, grad_softmax
+from funcs import derivate, grad_softmax
 from typing import Callable
 from copy import copy
 
@@ -77,7 +76,6 @@ class FullyConnected(Layer):
             The axes correspond to the same axes as the input.
         """
         self.input = input # Save input for use in backpropagate().
-        #num_inputs = np.shape(input)[0]
         self.z = input @ self.weights + self.bias
 
         # calculate a, add bias
@@ -106,51 +104,21 @@ class FullyConnected(Layer):
             ndarray: Partial derivatives of the cost function with respect to
             every input value to this layer.
         """
-        #self.grad_weights = 0
         input = self.input
         if self.act_func.__name__ == "softmax":
-            #grad_act = vmap(vmap(derivate(self.act_func)))
-            #z_sum = np.sum()
-            #delta_matrix = dC_doutput * grad_act(self.z, z_sum)
-            #z_sum = np.sum(z, axis=1)
             grad_act = grad_softmax(self.z)
         else:
             grad_act = vmap(vmap(derivate(self.act_func)))(self.z)
+        
         input_size = np.shape(input)
-
-        ## Initialize weights and biases.
-        #grad_weights = np.zeros(self.weights_size)
-        #grad_biases = np.zeros(np.shape(self.bias))cd On
-        #grad_input = np.zeros(input_size)
-
-        #dC_da = dC_doutput * grad_act(self.z)
-        delta_matrix = dC_doutput * grad_act#(self.z)
+        delta_matrix = dC_doutput * grad_act
         grad_weights = input.T @ delta_matrix/input_size[0]
         grad_biases = np.sum(delta_matrix, axis=0).reshape(1, np.shape(delta_matrix)[1])/input_size[0]
         grad_input = delta_matrix @ self.weights.T
-        #grad_input = self.weights.T@delta_matrix
 
+        grad_weights = grad_weights + self.weights * lmbd
 
-        # print(f"Before : {grad_weights}")
-        grad_weights = grad_weights + self.weights * lmbd #L2 regularization
-        # print(f"After : {grad_weights}")
-
-        #for i in range(self.input_length):
-            #for j in range(self.output_length):
-                ## Compute the gradients.
-            #    grad_weights = grad_weights.at[i,j].set(np.sum(dC_doutput[:,j] * grad_act(self.z[:,j]) * input[:,i])/input_size[0])
-            #    grad_biases = grad_biases.at[j].set(np.sum(1*grad_act(self.z[:,j])*dC_doutput[:,j])/input_size[0])
-
-            #    zero_matrix = np.zeros(input_size)
-            #    grad_input += zero_matrix.at[:,i].set(dC_doutput[:,j] * grad_act(self.z[:,j]) * self.weights[i,j])
-
-
-        # scheduler_weights = Adam(0.001, 0.9, 0.999)
-
-        # self.scheduler_bias.reset()
-        # self.scheduler_weights.reset()
         self.weights -= self.scheduler_weights.update_change(grad_weights)
-        # scheduler_bias = Adam(0.001, 0.9, 0.999)
         update_bias = self.scheduler_bias.update_change(grad_biases)
         self.bias -= update_bias
 

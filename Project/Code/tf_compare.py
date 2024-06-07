@@ -15,7 +15,6 @@ from funcs import padding
 from copy import copy
 
 data_frac = 0.01
-# data_frac = 0.001
 
 digits = datasets.mnist.load_data(path="mnist.npz")
 (x_train, y_train), (x_test, y_test) = digits #The data contains a test and a train set
@@ -60,9 +59,15 @@ def create_convolutional_neural_network_our_code(cost_func, receptive_field, inp
     model.add_FullyConnected_layer(10, softmax, scheduler)
     return model
 
+def create_convolutional_neural_network_our_code_w_o_n(cost_func, input_shape, n_hidden_neurons, act_func, scheduler, n_filters):
+    model = Network(cost_func, input_shape)
+    model.add_Convolution_layer((n_filters, 3, 3, 1), act_func, copy(scheduler))
+    model.add_AveragePool_layer(2, 2)
+    model.add_Flattened_layer()
+    model.add_FullyConnected_layer(10, softmax, scheduler)
+    return model
 
 epochs = 50
-# batch_size = 400
 batch_size = 60
 batches = x_train.shape[0] // batch_size
 input_shape = x_train.shape[1:4]
@@ -70,6 +75,8 @@ receptive_field = 5
 n_filters = 5
 n_hidden_neurons= 10
 n_categories = 10
+
+
 
 eta_vals = np.logspace(-2, -2, 1)
 lmbd_vals = np.logspace(-2, -2, 1)
@@ -80,17 +87,6 @@ test_accuracy = np.zeros((len(eta_vals), len(lmbd_vals)))
 activation = "leaky_relu"
 act_func = LRELU
 
-
-#         train_accuracy[i][j] = CNN.evaluate(x_train, y_train)[1]
-#         test_accuracy[i][j] = CNN.evaluate(x_test, y_test)[1]
-#         print("Learning rate = ", eta)
-#         print("Lambda = ", lmbd)
-#         print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
-#         print()
-# # Plotting the training and test accuracy
-# heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_train_acc_tf.pdf")
-# heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, sigmoid", xlabel="$\lambda$", ylabel="$\eta$", filename=f"../Figures/cnn_test_acc_tf.pdf")
-
 eta = 0.01
 lmbd = 0.001
 scheduler = Adam(eta, 0.9, 0.999)
@@ -100,10 +96,39 @@ cnn_tf = create_convolutional_neural_network_keras(input_shape, receptive_field,
                                                 eta, lmbd, activation)
 history = cnn_tf.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, verbose=0)
 
-# print(history.history.keys())
 val_accs_tf = history.history["val_accuracy"]
 train_accs_tf = history.history["accuracy"]
 
+
+#Plotting for different eta/lambda start
+for i, eta in enumerate(eta_vals):
+    for j, lmbd in enumerate(lmbd_vals):
+        scheduler = Adam(eta, 0.9, 0.999)
+        CNN = create_convolutional_neural_network_our_code(CostLogReg, input_shape, n_hidden_neurons, act_func, scheduler, n_filters)
+        scores = CNN.train(x_train, y_train, x_test, y_test, epochs, batches, lmbd)
+
+        train_accs_our = scores["train_accuracy"]
+        val_accs_our = scores["val_accuracy"]
+
+        train_accuracy[i][j] = train_accs_our[-1]
+        test_accuracy[i][j] = val_accs_our[-1]
+        print("Learning rate = ", eta)
+        print("Lambda = ", lmbd)
+        print(f"Test accuracy: {test_accuracy[i][j]:.3f}")
+        print()
+        
+        plt.figure()
+        epoch_arr = np.arange(epochs)
+        plt.figure()
+        plt.title("Validation accuracies")
+        plt.plot(epoch_arr, val_accs_our, label="Our network")
+        plt.legend()
+        plt.savefig("our_accs_cifar10.pdf")
+# Plotting the training and test accuracy
+heatmap(train_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Training Accuracy, relu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_train_our.pdf")
+heatmap(test_accuracy, xticks=lmbd_vals, yticks=eta_vals, title=f"Test Accuracy, relu", xlabel="$\lambda$", ylabel="$\eta$", filename=f"cifar10_test_our.pdf")
+
+#Plotting for different eta/lambda end
 epoch_arr = np.arange(epochs)
 plt.figure()
 plt.title("Tensorflow accuracies")
@@ -135,6 +160,3 @@ plt.plot(epoch_arr, train_accs_tf, label="Tensorflow")
 plt.plot(epoch_arr, train_accs_our, label="Our network")
 plt.legend()
 plt.savefig("tf_compare_accs_train.pdf")
-
-# train_accuracy_tf = CNN.evaluate(x_train, y_train)[1]
-# test_accuracy_tf = CNN.evaluate(x_test, y_test)[1]
