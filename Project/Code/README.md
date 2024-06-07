@@ -17,7 +17,7 @@ This code contains our code, and is split into three categories. The first consi
 - *fullyconnected.py* is the class for the fully connected layers.
 
 ## The result generators
-- *mnist.py* produces results, i.e. figures for the MNIST dataset.
+- *mnist.py* produces results for the MNIST dataset, by default set to the averagepool plot
 - *cifar10.py* is the file where we produce results for the CIFAR-10 dataset, the dataset is contained in the *cifar10data* folder.
 
 [^1]: https://www.tensorflow.org/datasets/catalog/mnist
