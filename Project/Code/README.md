@@ -18,7 +18,7 @@ This code contains our code, and is split into three categories. The first consi
 
 ## The result generators
 - HER MÅ VI LEGGE TIL NÅR VI VET HVILKE FILER SOM SKAL VÆRE MED! (bør gi navnet, hvilken data den ser på, og hvilken type figurer den produserer).
-- *cifar10.py* is the file where we produce results for the CIFAR-10 dataset, the data is contained in the *cifar10data* folder.
+- *cifar10.py* is the file where we produce results for the CIFAR-10 dataset, the data is contained in the *cifar10data* folder. Figures that are produced is contained in the *Figures* folder.
 
 [^1]: https://www.tensorflow.org/datasets/catalog/mnist
 [^2]: https://www.cs.toronto.edu/~kriz/cifar.html
